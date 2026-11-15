@@ -1,0 +1,15 @@
+{
+  "name": "Jarvis · Asistente personal",
+  "short_name": "Jarvis",
+  "description": "Instalador oficial de Jarvis para Windows y Android.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#07121d",
+  "theme_color": "#07121d",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
