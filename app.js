@@ -36,17 +36,7 @@
   }
 
   async function installAndroid() {
-    if (deferredInstallPrompt) {
-      deferredInstallPrompt.prompt();
-      const result = await deferredInstallPrompt.userChoice;
-      deferredInstallPrompt = null;
-      if (result.outcome === 'accepted') toast('Jarvis se está añadiendo a tu pantalla de inicio.');
-      else toast('Puedes instalar Jarvis más tarde desde el menú del navegador.');
-      return;
-    }
-    const note = $('#androidNote');
-    if (note) note.textContent = 'Abre el menú ⋮ del navegador y pulsa «Instalar aplicación» o «Añadir a pantalla de inicio».';
-    toast('Abre el menú del navegador para instalar Jarvis.');
+    window.location.href = 'jarvis/';
   }
 
   function setupMenu() {
@@ -63,22 +53,9 @@
     }));
   }
 
-  window.addEventListener('beforeinstallprompt', event => {
-    event.preventDefault();
-    deferredInstallPrompt = event;
-    const button = $('#androidInstall');
-    if (button) button.querySelector('span').textContent = 'Instalar aplicación';
-  });
-
-  window.addEventListener('appinstalled', () => {
-    deferredInstallPrompt = null;
-    toast('Jarvis se instaló correctamente.');
-  });
-
   document.addEventListener('DOMContentLoaded', () => {
     renderDetectedPlatform();
     setupMenu();
     $('#androidInstall')?.addEventListener('click', installAndroid);
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 })();

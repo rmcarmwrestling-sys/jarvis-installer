@@ -14,9 +14,11 @@ El instalador ya incluye el runtime de escritorio, por lo que no necesita Node.j
 
 ## Android
 
-La página se puede instalar como PWA desde Chrome o Edge para Android. El botón «Instalar en Android» usa el aviso nativo del navegador cuando está disponible; si no, el usuario puede abrir el menú del navegador y elegir «Instalar aplicación» o «Añadir a pantalla de inicio».
+La página de distribución no se instala como Jarvis. En Android, el botón «Abrir e instalar Jarvis» lleva a `jarvis/`, que es la aplicación de Jarvis propiamente dicha y tiene su propio manifiesto, icono, caché offline y pantalla independiente.
 
-Para que el aviso de instalación funcione, sirve esta carpeta mediante HTTPS o desde `localhost`. No se presenta un APK falso: la versión Android de esta entrega es una aplicación web instalable (PWA).
+Dentro de Jarvis, pulsa «Instalar» en la barra superior. Si el navegador no muestra el aviso, abre su menú y elige «Instalar aplicación» o «Añadir a pantalla de inicio». La app Android usa OpenRouter desde el navegador; la clave y el modelo se guardan localmente en ese dispositivo. Las acciones que controlan Windows siguen siendo exclusivas de la aplicación de escritorio.
+
+No se presenta un APK falso: la versión Android de esta entrega es una aplicación web instalable (PWA), no la página de distribución.
 
 ## Probar localmente
 

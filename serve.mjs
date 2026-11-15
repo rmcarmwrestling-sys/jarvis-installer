@@ -22,7 +22,7 @@ function networkUrls() {
 const server = http.createServer(async (request, response) => {
   try {
     const requestPath = decodeURIComponent(new URL(request.url || '/', `http://${request.headers.host || 'localhost'}`).pathname);
-    const relative = requestPath === '/' ? 'index.html' : requestPath.replace(/^\/+/, '');
+    const relative = requestPath === '/' ? 'index.html' : requestPath.endsWith('/') ? `${requestPath.replace(/^\/+|\/$/g, '')}/index.html` : requestPath.replace(/^\/+/, '');
     const filePath = path.resolve(ROOT, relative);
     if (!filePath.startsWith(ROOT) || !existsSync(filePath)) { response.writeHead(404); response.end('No encontrado'); return; }
     const body = await fs.readFile(filePath);
