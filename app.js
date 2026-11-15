@@ -27,16 +27,12 @@
     if (!banner || !text) return;
     document.querySelectorAll('.platform-card').forEach(card => card.classList.toggle('detected', card.dataset.platform === platform));
     const labels = {
-      android: 'Estás en Android · la opción recomendada es instalar la PWA.',
+      android: 'Estás en Android · descarga el APK nativo de Jarvis.',
       windows: 'Estás en Windows · la descarga portable está lista para ti.',
       ios: 'Estás en iPhone o iPad · abre el menú Compartir y elige «Añadir a pantalla de inicio».',
-      other: 'Puedes elegir Windows para descargar Jarvis o Android para instalar la versión web.',
+      other: 'Puedes elegir Windows para descargar Jarvis o Android para descargar el APK.',
     };
     text.textContent = labels[platform];
-  }
-
-  async function installAndroid() {
-    window.location.href = 'jarvis/';
   }
 
   function setupMenu() {
@@ -56,6 +52,5 @@
   document.addEventListener('DOMContentLoaded', () => {
     renderDetectedPlatform();
     setupMenu();
-    $('#androidInstall')?.addEventListener('click', installAndroid);
   });
 })();

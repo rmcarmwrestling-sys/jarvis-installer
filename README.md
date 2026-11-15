@@ -14,11 +14,13 @@ El instalador ya incluye el runtime de escritorio, por lo que no necesita Node.j
 
 ## Android
 
-La página de distribución no se instala como Jarvis. En Android, el botón «Abrir e instalar Jarvis» lleva a `jarvis/`, que es la aplicación de Jarvis propiamente dicha y tiene su propio manifiesto, icono, caché offline y pantalla independiente.
+El botón «Abrir e instalar Jarvis» descarga el APK nativo oficial:
 
-Dentro de Jarvis, pulsa «Instalar» en la barra superior. Si el navegador no muestra el aviso, abre su menú y elige «Instalar aplicación» o «Añadir a pantalla de inicio». La app Android usa OpenRouter desde el navegador; la clave y el modelo se guardan localmente en ese dispositivo. Las acciones que controlan Windows siguen siendo exclusivas de la aplicación de escritorio.
+`https://github.com/rmcarmwrestling-sys/jarvis-installer/releases/download/v1.1.0/Jarvis-Android.apk`
 
-No se presenta un APK falso: la versión Android de esta entrega es una aplicación web instalable (PWA), no la página de distribución.
+Después de la descarga, abre el APK y confirma «Instalar». Android puede pedir que permitas temporalmente la instalación desde el navegador. La aplicación abre directamente la interfaz real de Jarvis, guarda su configuración en el móvil y solicita permiso de micrófono solo cuando es necesario.
+
+El APK usa la misma interfaz de Jarvis que la aplicación de Windows, pero las funciones de control de Windows siguen siendo exclusivas del ordenador. El chat de Android utiliza OpenRouter directamente desde el móvil.
 
 ## Probar localmente
 
