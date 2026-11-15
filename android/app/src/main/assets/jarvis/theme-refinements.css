@@ -1,0 +1,17 @@
+.topbar-title{font-size:11px!important;font-weight:700!important;letter-spacing:2.1px!important;color:#e4f8ff!important;text-shadow:0 0 14px rgba(86,219,243,.18)}
+.console-crumb{color:#7194a4!important}
+.privacy-note{color:#7998a8!important}
+.eyebrow{color:#86d9e9!important}
+.eyebrow i{color:#6482a0!important}
+.welcome-copy{color:#a1b8c6!important}
+.system-ribbon{font-size:8px!important;letter-spacing:.9px!important;color:#82a6b6!important}
+.system-ribbon .voice-unavailable{color:#deaf82!important}
+.prompt-card strong{color:#e2f7fc!important}
+.prompt-card small{font-size:8px!important;letter-spacing:.65px!important;color:#8aaabc!important}
+@media(max-width:760px){
+  .topbar-title{font-size:10px!important;letter-spacing:1.6px!important}
+  .system-ribbon{font-size:7px!important;letter-spacing:.55px!important}
+  .prompt-card small{font-size:7px!important;letter-spacing:.45px!important}
+}
+@media(max-width:410px){.system-ribbon{font-size:6px!important}}
+.topbar-install{border:1px solid rgba(126,228,204,.55);background:rgba(63,193,172,.12);color:#b9f5e5;border-radius:999px;padding:8px 13px;font:600 10px 'DM Mono',monospace;letter-spacing:.7px;cursor:pointer;transition:.2s}.topbar-install:hover{background:rgba(63,193,172,.24);border-color:#9cf1dc}
