@@ -3,7 +3,7 @@ const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector
 const HISTORY_KEY = 'jarvis.chat.v1';
 const state = {
   messages: [], provider: 'openrouter', model: 'openrouter/free', hasKey: false,
-  ollama: { available: false, models: [] }, busy: false, recognition: null, toastTimer: null,
+  ollama: { available: false, models: [] }, busy: false, recognition: null, toastTimer: null, attachments: [],
 };
 
 const CONFIG_KEY = 'jarvis.android.config.v1';
@@ -34,7 +34,17 @@ try {
 } catch { state.messages = []; }
 
 function saveHistory() {
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(state.messages.slice(-80))); } catch { /* Private browsing can disable storage. */ }
+  try {
+    const history = state.messages.slice(-80).map(message => {
+      const saved = { ...message };
+      if (Array.isArray(saved.content)) saved.content = saved.content.filter(part => part?.type !== 'image_url');
+      if (Array.isArray(saved.attachments)) saved.attachments = saved.attachments.map(item => ({
+        id: item.id, kind: item.kind, name: item.name, type: item.type, size: item.size,
+      }));
+      return saved;
+    });
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch { /* Private browsing can disable storage. */ }
 }
 
 async function api(path, body) {
@@ -95,16 +105,17 @@ function setBusy(value) {
   $('#messageInput').readOnly = value;
   $('#newChat').disabled = value;
   $('#newChat').style.opacity = value ? '.55' : '';
+  $('#attachButton').disabled = value;
   $('#sendButton').classList.toggle('working', value);
 }
 
 function visibleHistory() {
-  $('#welcome').hidden = state.messages.some(message => message.role === 'user' || (message.role === 'assistant' && (message.content || message.tool_calls?.length)));
+  $('#welcome').hidden = state.messages.some(message => message.role === 'user' || (message.role === 'assistant' && (message.content || message.tool_calls?.length)) || message.attachments?.length);
   const conversation = $('#conversation');
   conversation.replaceChildren();
   for (const message of state.messages) {
     if (message.role === 'tool' || (message.role === 'assistant' && !readable(message.content))) continue;
-    addMessageElement(message.role, readable(message.content));
+    addMessageElement(message.role, readable(message.content), Array.isArray(message.attachments) ? message.attachments : []);
   }
   scrollToBottom();
 }
@@ -115,8 +126,42 @@ function readable(content) {
   return '';
 }
 
-function addMessageElement(role, content) {
-  if (!content) return;
+function appendAttachmentPreview(parent, item) {
+  const card = document.createElement('div');
+  card.className = 'message-attachment';
+  if (item.url || item.poster) {
+    if (item.kind === 'video') {
+      const video = document.createElement('video');
+      video.controls = true;
+      video.preload = 'metadata';
+      if (item.poster) video.poster = item.poster;
+      if (item.url) video.src = item.url;
+      card.append(video);
+    } else {
+      const image = document.createElement('img');
+      image.loading = 'lazy';
+      image.alt = item.name || 'Imagen adjunta';
+      image.src = item.url || item.poster;
+      card.append(image);
+    }
+  } else {
+    const placeholder = document.createElement('div');
+    placeholder.className = 'message-attachment-placeholder';
+    placeholder.textContent = item.kind === 'video' ? '🎬' : '🖼️';
+    card.append(placeholder);
+  }
+  const info = document.createElement('div');
+  info.className = 'message-attachment-info';
+  info.textContent = item.name || (item.kind === 'video' ? 'Vídeo' : 'Imagen');
+  const meta = document.createElement('small');
+  meta.textContent = `${JarvisAttachments.formatBytes(item.size)}${item.kind === 'video' ? ' · vista previa para el modelo' : ''}`;
+  info.append(meta);
+  card.append(info);
+  parent.append(card);
+}
+
+function addMessageElement(role, content, attachments = []) {
+  if (!content && !attachments.length) return;
   const row = document.createElement('article');
   row.className = `message ${role === 'user' ? 'user' : 'assistant'}`;
   const avatar = document.createElement('div');
@@ -132,10 +177,19 @@ function addMessageElement(role, content) {
   time.className = 'message-time';
   time.textContent = new Intl.DateTimeFormat('es', { hour: '2-digit', minute: '2-digit' }).format(new Date());
   head.append(name, time);
-  const text = document.createElement('div');
-  text.className = 'message-text';
-  text.textContent = content;
-  body.append(head, text);
+  body.append(head);
+  if (content) {
+    const text = document.createElement('div');
+    text.className = 'message-text';
+    text.textContent = content;
+    body.append(text);
+  }
+  if (attachments.length) {
+    const gallery = document.createElement('div');
+    gallery.className = 'message-attachments';
+    attachments.forEach(item => appendAttachmentPreview(gallery, item));
+    body.append(gallery);
+  }
   if (role !== 'user') {
     const actions = document.createElement('div');
     actions.className = 'message-actions';
@@ -165,7 +219,7 @@ function appendMessage(message) {
   saveHistory();
   if (message.role === 'user' || (message.role === 'assistant' && readable(message.content))) {
     $('#welcome').hidden = true;
-    addMessageElement(message.role, readable(message.content));
+    addMessageElement(message.role, readable(message.content), message.attachments || []);
   }
   scrollToBottom();
 }
@@ -302,21 +356,95 @@ async function handleTool(call) {
   return { role: 'tool', tool_call_id: call.id, name: call.function.name, content: payload };
 }
 
+function renderAttachmentTray() {
+  const tray = $('#attachmentTray');
+  tray.replaceChildren();
+  tray.hidden = state.attachments.length === 0;
+  $('#attachButton').classList.toggle('has-files', state.attachments.length > 0);
+  for (const item of state.attachments) {
+    const chip = document.createElement('div');
+    chip.className = 'attachment-chip';
+    const preview = document.createElement(item.kind === 'video' ? 'video' : 'img');
+    preview.src = item.poster || item.url;
+    preview.alt = item.name;
+    if (item.kind === 'video') { preview.muted = true; preview.preload = 'metadata'; }
+    chip.append(preview);
+    const copy = document.createElement('div');
+    copy.className = 'attachment-chip-copy';
+    const name = document.createElement('span');
+    name.className = 'attachment-chip-name';
+    name.textContent = item.name;
+    const meta = document.createElement('span');
+    meta.className = 'attachment-chip-meta';
+    meta.textContent = `${item.kind === 'video' ? 'Vídeo' : 'Imagen'} · ${JarvisAttachments.formatBytes(item.size)}`;
+    copy.append(name, meta);
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'attachment-remove';
+    remove.title = 'Quitar archivo';
+    remove.ariaLabel = `Quitar ${item.name}`;
+    remove.textContent = '×';
+    remove.addEventListener('click', () => {
+      JarvisAttachments.release(item);
+      state.attachments = state.attachments.filter(candidate => candidate.id !== item.id);
+      renderAttachmentTray();
+    });
+    chip.append(copy, remove);
+    tray.append(chip);
+  }
+}
+
+function addAttachments(files) {
+  const incoming = [...files].filter(file => /^(image|video)\//i.test(file.type || ''));
+  if (!incoming.length) { toast('Selecciona imágenes o vídeos.'); return; }
+  state.attachments.push(...incoming.map(file => JarvisAttachments.create(file)));
+  renderAttachmentTray();
+  toast(`${incoming.length} archivo(s) preparado(s). No hay límite de tamaño en Jarvis.`, 2600);
+}
+
+async function prepareAttachmentContent(text, attachments) {
+  const parts = [];
+  if (text) parts.push({ type: 'text', text });
+  for (const item of attachments) {
+    if (item.kind === 'image') {
+      try {
+        const dataUrl = await JarvisAttachments.toDataUrl(item.file);
+        parts.push({ type: 'image_url', image_url: { url: dataUrl } });
+      } catch {
+        parts.push({ type: 'text', text: `[No se pudo leer la imagen adjunta: ${item.name}]` });
+      }
+      continue;
+    }
+    item.poster = await JarvisAttachments.videoPoster(item.file);
+    if (item.poster) parts.push({ type: 'image_url', image_url: { url: item.poster } });
+    parts.push({ type: 'text', text: `[Vídeo adjunto: ${item.name} · ${JarvisAttachments.formatBytes(item.size)}. El modelo recibe una previsualización del vídeo y el archivo completo queda disponible en este dispositivo.]` });
+  }
+  if (!parts.length) return '';
+  if (parts.length === 1 && parts[0].type === 'text') return parts[0].text;
+  return parts;
+}
+
 async function sendCurrent(textOverride) {
   if (state.busy) return;
   const text = (textOverride ?? $('#messageInput').value).trim();
-  if (!text) return;
+  const attachments = state.attachments.slice();
+  if (!text && !attachments.length) return;
   $('#messageInput').value = '';
   resizeInput();
-  appendMessage({ role: 'user', content: text });
+  state.attachments = [];
+  renderAttachmentTray();
   setBusy(true);
+  let content = text;
+  try { content = await prepareAttachmentContent(text, attachments); }
+  catch (error) { content = text || `[No se pudieron preparar los archivos adjuntos: ${error.message}]`; }
+  appendMessage({ role: 'user', content, attachments });
   let indicator = typingIndicator();
   try {
     let completed = false;
     for (let turn = 0; turn < 6; turn++) {
       indicator?.remove();
       indicator = typingIndicator();
-      const response = await api('/api/chat', { messages: state.messages });
+      const response = await api('/api/chat', { messages: state.messages.map(({ attachments, ...message }) => message) });
       indicator?.remove();
       indicator = null;
       const assistant = response.message || { role: 'assistant', content: 'No recibí una respuesta.' };
@@ -471,6 +599,8 @@ async function refreshProjectsLabel() {
 }
 
 $('#composerForm').addEventListener('submit', event => { event.preventDefault(); sendCurrent(); });
+$('#attachButton').addEventListener('click', () => $('#fileInput').click());
+$('#fileInput').addEventListener('change', event => { addAttachments(event.target.files || []); event.target.value = ''; });
 $('#messageInput').addEventListener('input', resizeInput);
 $('#messageInput').addEventListener('keydown', event => {
   if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendCurrent(); }
@@ -505,6 +635,10 @@ $('#installApp')?.addEventListener('click', async () => {
 });
 $('#newChat').addEventListener('click', () => {
   if (state.busy) return;
+  state.attachments.forEach(JarvisAttachments.release);
+  state.messages.flatMap(message => message.attachments || []).forEach(JarvisAttachments.release);
+  state.attachments = [];
+  renderAttachmentTray();
   state.messages = [];
   saveHistory();
   $('#conversation').replaceChildren();

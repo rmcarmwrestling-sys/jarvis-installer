@@ -16,11 +16,11 @@ El instalador ya incluye el runtime de escritorio, por lo que no necesita Node.j
 
 El botón «Abrir e instalar Jarvis» descarga el APK nativo oficial:
 
-`https://github.com/rmcarmwrestling-sys/jarvis-installer/releases/download/v1.2.0/app-release.apk`
+`https://github.com/rmcarmwrestling-sys/jarvis-installer/releases/download/v1.3.0/app-release.apk`
 
 Después de la descarga, abre el APK y confirma «Instalar». Android puede pedir que permitas temporalmente la instalación desde el navegador. La aplicación incluye una copia local de la interfaz real de Jarvis, así que puede abrirse aunque GitHub Pages esté temporalmente inaccesible; el chat necesita conexión a internet. Guarda su configuración en el móvil y solicita permiso de micrófono solo cuando es necesario.
 
-El APK usa la misma interfaz de Jarvis que la aplicación de Windows, pero las funciones de control de Windows siguen siendo exclusivas del ordenador. El chat de Android utiliza OpenRouter directamente desde el móvil.
+El APK usa la misma interfaz de Jarvis que la aplicación de Windows, pero las funciones de control de Windows siguen siendo exclusivas del ordenador. El chat de Android utiliza OpenRouter directamente desde el móvil. Puedes adjuntar varias imágenes y vídeos sin un límite artificial de Jarvis; las imágenes se envían como contenido visual y los vídeos se muestran con una previsualización porque las APIs de chat no aceptan vídeo bruto de forma universal. El proveedor, el navegador y el almacenamiento del teléfono pueden seguir imponiendo límites técnicos.
 
 ## Probar localmente
 

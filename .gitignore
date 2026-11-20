@@ -1,2 +1,7 @@
 downloads/*.zip
 downloads/*.exe
+downloads/~*
+downloads/*.CAB
+downloads/*.DDF
+downloads/*.INF
+downloads/*.RPT

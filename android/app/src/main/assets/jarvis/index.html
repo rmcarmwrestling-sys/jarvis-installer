@@ -64,9 +64,10 @@
         <div class="voice-status" id="voiceStatus" hidden><span class="record-dot"></span> Escuchando… habla ahora <button id="stopVoice" aria-label="Detener">×</button></div>
         <form class="composer" id="composerForm">
           <textarea id="messageInput" rows="1" placeholder="Escribe a Jarvis…" aria-label="Escribe un mensaje"></textarea>
-          <div class="composer-tools"><div class="composer-hint"><span>↵</span> para enviar <span class="hint-divider">·</span> <span>⇧ ↵</span> nueva línea</div><div class="composer-actions"><button type="button" class="mic-button" id="micButton" aria-label="Hablar con Jarvis" title="Hablar con Jarvis"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8"></path></svg></button><button type="submit" class="send-button" id="sendButton" aria-label="Enviar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"></path></svg></button></div></div>
+          <div class="attachment-tray" id="attachmentTray" hidden aria-live="polite"></div>
+          <div class="composer-tools"><div class="composer-left"><button type="button" class="attachment-button" id="attachButton" aria-label="Adjuntar imágenes o vídeos" title="Adjuntar imágenes o vídeos">⌇</button><input id="fileInput" type="file" accept="image/*,video/*" multiple hidden><div class="composer-hint"><span>↵</span> para enviar <span class="hint-divider">·</span> <span>⇧ ↵</span> nueva línea</div></div><div class="composer-actions"><button type="button" class="mic-button" id="micButton" aria-label="Hablar con Jarvis" title="Hablar con Jarvis"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8"></path></svg></button><button type="submit" class="send-button" id="sendButton" aria-label="Enviar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"></path></svg></button></div></div>
         </form>
-      <div class="fine-print">El reconocimiento de voz lo gestiona el navegador. Configura una clave de IA en Ajustes para empezar.</div>
+      <div class="fine-print">Imágenes y vídeos sin límite artificial en Jarvis. El modelo online puede imponer sus propios límites.</div>
       </div>
     </main>
   </div>
@@ -100,6 +101,7 @@
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="/app.js" defer></script>
+  <script src="attachments.js" defer></script>
+  <script src="app.js" defer></script>
 </body>
 </html>
