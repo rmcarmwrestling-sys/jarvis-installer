@@ -2,6 +2,7 @@ package com.jarvis.android;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
@@ -251,7 +252,7 @@ public class MainActivity extends Activity {
         }
 
         private void vibrate(int milliseconds) {
-            Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+            Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
             if (vibrator == null) throw new IllegalStateException("Este dispositivo no tiene vibrador disponible.");
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) vibrator.vibrate(VibrationEffect.createOneShot(milliseconds, VibrationEffect.DEFAULT_AMPLITUDE));
             else vibrator.vibrate(milliseconds);
