@@ -206,7 +206,9 @@ public class MainActivity extends Activity {
             for (String packageName : knownPackages) {
                 Intent launch = manager.getLaunchIntentForPackage(packageName);
                 if (launch != null) {
-                    ApplicationInfo info = manager.getApplicationInfo(packageName, 0);
+                    ApplicationInfo info;
+                    try { info = manager.getApplicationInfo(packageName, 0); }
+                    catch (PackageManager.NameNotFoundException ignored) { continue; }
                     String label = String.valueOf(manager.getApplicationLabel(info)).toLowerCase(Locale.ROOT);
                     if (label.contains(query) || query.contains(label) || packageName.contains(query)) {
                         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
