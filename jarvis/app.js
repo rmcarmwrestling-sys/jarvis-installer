@@ -1255,8 +1255,38 @@ $('#studyLink').addEventListener('click', openStudyWorkspace);
 $('#studyTop')?.addEventListener('click', openStudyWorkspace);
 
 $('#composerForm').addEventListener('submit', event => { event.preventDefault(); sendCurrent(); });
-$('#attachButton')?.addEventListener('click', () => $('#fileInput')?.click());
+function setAttachmentMenu(open) {
+  const menu = $('#attachmentMenu');
+  const button = $('#attachButton');
+  if (!menu || !button) return;
+  menu.hidden = !open;
+  button.setAttribute('aria-expanded', String(open));
+}
+
+$('#attachButton')?.addEventListener('click', event => {
+  event.stopPropagation();
+  const menu = $('#attachmentMenu');
+  setAttachmentMenu(Boolean(menu?.hidden));
+});
+$$('[data-attachment-action]').forEach(button => button.addEventListener('click', async () => {
+  const action = button.dataset.attachmentAction;
+  setAttachmentMenu(false);
+  if (action === 'camera') {
+    try {
+      await api('/api/action', { approved: true, name: 'open_camera', arguments: {} });
+    } catch (error) { toast(error.message); }
+    return;
+  }
+  $('#fileInput')?.click();
+}));
+document.addEventListener('click', event => {
+  const target = event.target;
+  if (!(target instanceof Element) || (!target.closest('#attachmentMenu') && !target.closest('#attachButton'))) setAttachmentMenu(false);
+});
+document.addEventListener('keydown', event => { if (event.key === 'Escape') setAttachmentMenu(false); });
 $('#fileInput')?.addEventListener('change', event => { addAttachments(event.target.files || []); event.target.value = ''; });
+const sendArrowPath = $('#sendButton path');
+if (sendArrowPath) sendArrowPath.setAttribute('d', 'M12 19V5m-6 6 6-6 6 6');
 $('#messageInput').addEventListener('input', resizeInput);
 $('#messageInput').addEventListener('keydown', event => {
   if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendCurrent(); }
