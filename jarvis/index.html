@@ -3,11 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#07121d">
-  <meta name="description" content="Jarvis, tu asistente personal en Android.">
-  <title>Jarvis · Asistente personal</title>
+  <meta name="theme-color" content="#101114">
+  <meta name="description" content="Jarvis, tu asistente personal en el dispositivo donde lo instalas.">
+  <title>Jarvis · Tu asistente personal</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="theme-futurista.css">
   <link rel="stylesheet" href="theme-refinements.css">
@@ -24,12 +23,13 @@
 
       <div class="side-label">TU ESPACIO</div>
       <button class="side-link selected" id="chatLink"><span class="side-icon">◉</span> Conversación</button>
+      <button class="side-link" id="studyLink"><span class="side-icon">✦</span> Study <span class="side-badge">BETA</span></button>
       <button class="side-link" id="projectsLink"><span class="side-icon">▤</span> Mis proyectos <span class="side-arrow">↗</span></button>
 
       <div class="sidebar-spacer"></div>
       <div class="local-card">
         <div class="local-indicator"><span></span> <span id="localLabel">NÚCLEO LOCAL</span></div>
-        <p>Jarvis se ejecuta en este ordenador.</p>
+        <p>Jarvis se ejecuta en el dispositivo donde lo has instalado.</p>
         <button class="provider-line" id="providerLine">Preparando conexión <span>›</span></button>
       </div>
       <button class="side-link settings-link" id="settingsOpen"><span class="side-icon">⚙</span> Ajustes</button>
@@ -38,8 +38,8 @@
 
     <main class="main-panel">
       <header class="topbar">
-      <div class="topbar-left"><div class="mobile-mark">J</div><span class="topbar-title">JARVIS</span><span class="connection-pill"><i></i><span id="connectionLabel">CONFIGURAR</span></span><span class="console-crumb">ANDROID <b>01</b></span></div>
-        <div class="topbar-right"><span class="privacy-note"><span>⌑</span> APLICACIÓN JARVIS</span><button class="topbar-install" id="installApp" type="button">Instalar</button><button class="icon-button" id="settingsTop" aria-label="Ajustes" title="Ajustes">⚙</button></div>
+        <div class="topbar-left"><div class="mobile-mark">J</div><span class="topbar-title">JARVIS</span><span class="connection-pill"><i></i><span id="connectionLabel">LOCAL</span></span><span class="console-crumb">NÚCLEO <b>01</b></span></div>
+        <div class="topbar-right"><span class="privacy-note"><span>⌑</span> INTERFAZ LOCAL</span><button class="icon-button" id="settingsTop" aria-label="Ajustes" title="Ajustes">⚙</button></div>
       </header>
 
       <section class="chat-stage" id="chatStage">
@@ -47,12 +47,12 @@
           <div class="hero-orb" aria-hidden="true"><div class="orb-halo"></div><div class="orb-grid"></div><div class="orb-core"><span></span></div><div class="orb-ring ring-one"></div><div class="orb-ring ring-two"></div><div class="orb-ring ring-three"></div><div class="orb-glint"></div><span class="orb-node node-a">01</span><span class="orb-node node-b">J</span></div>
           <div class="eyebrow"><span></span> INTERFAZ INTELIGENTE <i>///</i></div>
           <h1>Hola. Soy <em>Jarvis.</em></h1>
-          <p class="welcome-copy">Tu asistente personal, directamente en tu móvil.<br>¿Qué te gustaría hacer hoy?</p>
-          <div class="system-ribbon"><span><i></i> JARVIS ONLINE</span><b></b><span id="voiceRibbon">MODO VOZ</span><b></b><span>PRIVACIDAD EN TU DISPOSITIVO</span></div>
+          <p class="welcome-copy">Tu asistente personal, directamente en tu dispositivo.<br>¿Qué te gustaría hacer hoy?</p>
+          <div class="system-ribbon"><span><i></i> NÚCLEO LOCAL</span><b></b><span id="voiceRibbon">MODO VOZ</span><b></b><span>CONTROL CON PERMISO</span></div>
           <div class="prompt-grid">
             <button class="prompt-card" data-code="01" data-prompt="Crea un videojuego de plataformas sencillo con HTML y JavaScript, y ábrelo para jugar."><span class="prompt-icon game-icon">⌘</span><span><strong>Crear un videojuego</strong><small>DISEÑO · CÓDIGO · JUEGO</small></span><b>↗</b></button>
             <button class="prompt-card" data-code="02" data-prompt="Explícame de forma sencilla cómo funciona la inteligencia artificial."><span class="prompt-icon idea-icon">✳</span><span><strong>Resolver una duda</strong><small>EXPLORAR UNA IDEA</small></span><b>↗</b></button>
-            <button class="prompt-card" data-code="03" data-prompt="Abre la Calculadora de Windows."><span class="prompt-icon app-icon">▦</span><span><strong>Abrir una aplicación</strong><small>CONTROL DEL SISTEMA</small></span><b>↗</b></button>
+            <button class="prompt-card" data-code="03" data-prompt="Abre la Calculadora."><span class="prompt-icon app-icon">▦</span><span><strong>Abrir una aplicación</strong><small>CONTROL DEL DISPOSITIVO</small></span><b>↗</b></button>
             <button class="prompt-card" data-code="04" data-prompt="Dame tres ideas para un proyecto creativo que pueda programar."><span class="prompt-icon spark-icon">✦</span><span><strong>Explorar ideas</strong><small>CREATIVIDAD · PROYECTOS</small></span><b>↗</b></button>
           </div>
         </div>
@@ -60,14 +60,101 @@
         <div class="pending-area" id="pendingArea" aria-live="polite"></div>
       </section>
 
-      <div class="composer-wrap">
+      <section class="study-view" id="studyView" hidden>
+        <div class="study-app">
+          <aside class="study-sidebar">
+            <div class="study-brand"><span class="study-brand-icon">⌁</span><strong>StudyIA</strong></div>
+            <nav class="study-nav" aria-label="Navegación de Study">
+              <button class="study-nav-item selected" data-study-page="dashboard"><span>▦</span> Panel</button>
+              <button class="study-nav-item" data-study-page="ai"><span>♙</span> StudyIA AI</button>
+              <button class="study-nav-item" data-study-page="tools"><span>⌁</span> Herramientas</button>
+              <button class="study-nav-item" data-study-page="subjects"><span>▱</span> Asignaturas</button>
+              <button class="study-nav-item" data-study-page="notes"><span>□</span> Apuntes</button>
+              <button class="study-nav-item" data-study-page="planner"><span>▣</span> Planificador</button>
+              <button class="study-nav-item" data-study-page="stats"><span>▥</span> Estadísticas</button>
+              <button class="study-nav-item" data-study-page="profile"><span>♙</span> Perfil</button>
+            </nav>
+            <div class="study-sidebar-bottom">
+              <button class="study-nav-item" data-study-page="download"><span>⇩</span> Descargar</button>
+              <button class="study-nav-item" data-study-page="help"><span>?</span> Ayuda</button>
+              <div class="study-sidebar-divider"></div>
+              <button class="study-nav-item" data-study-page="dark"><span>☾</span> Modo oscuro</button>
+              <button class="study-nav-item" data-study-page="close"><span>↪</span> Volver a Jarvis</button>
+              <small class="study-user-label">Jarvis · estudio local</small>
+            </div>
+          </aside>
+
+          <div class="study-main">
+            <header class="study-topbar"><div class="study-topbar-brand"><span class="study-brand-icon">⌁</span><strong>StudyIA</strong></div><div class="study-topbar-actions"><button type="button" class="study-top-icon" aria-label="Modo oscuro" title="Modo oscuro">☾</button><button type="button" class="study-top-icon" data-study-page="close" aria-label="Volver a Jarvis" title="Volver a Jarvis">↪</button></div></header>
+            <main class="study-content">
+              <section class="study-page" data-study-page-target="dashboard">
+                <div class="study-page-heading"><div><h1>Buenas noches, <span>estudiante</span></h1><p>Aquí tienes tu resumen de estudio.</p></div></div>
+                <div class="study-metric-grid"><article><span>◷</span><small>Tiempo estudio</small><strong>0<em> min</em></strong></article><article><span class="metric-orange">♨</span><small>Racha</small><strong>0<em> días</em></strong></article><article><span class="metric-green">✓</span><small>Exámenes</small><strong id="studyExamCount">0</strong></article><article><span class="metric-blue">▱</span><small>Asignaturas</small><strong>0</strong></article></div>
+                <h2 class="study-section-title">ACCESO RÁPIDO</h2>
+                <div class="study-quick-grid"><button data-study-page="ai"><i class="quick-purple">♙</i><span>StudyIA AI</span></button><button data-study-page="notes"><i class="quick-blue">□</i><span>Crear apuntes</span></button><button data-study-page="planner"><i class="quick-yellow">▣</i><span>Planificador</span></button><button data-study-page="subjects"><i class="quick-green">▱</i><span>Asignaturas</span></button><button data-study-page="stats"><i class="quick-pink">▥</i><span>Estadísticas</span></button><button data-study-page="builder"><i class="quick-indigo">↗</i><span>Crear examen</span></button></div>
+                <div class="study-dashboard-panels"><article><header><h2>Tareas pendientes</h2><button data-study-page="planner">Ver todas →</button></header><div class="study-empty-dashboard">No tienes tareas pendientes.</div></article><article><header><h2>Apuntes recientes</h2><button data-study-page="notes">Ver todos →</button></header><div class="study-empty-dashboard">No tienes apuntes todavía.</div></article></div>
+              </section>
+
+              <section class="study-page" data-study-page-target="ai" hidden><div class="study-page-heading"><div><h1>StudyIA AI</h1><p>Tu asistente para resolver dudas, explicar conceptos y estudiar.</p></div><button class="study-primary-button" data-study-page="builder">Crear examen <span>↗</span></button></div><div class="study-ai-card"><div class="study-ai-mark">♙</div><h2>Aprende conversando con Jarvis</h2><p>Pídele una explicación sencilla, un resumen, ejemplos o un plan de repaso. La conversación principal de Jarvis sigue disponible desde la barra lateral.</p><button class="study-primary-button" data-study-page="close">Abrir conversación <span>→</span></button></div></section>
+
+              <section class="study-page" data-study-page-target="tools" hidden><div class="study-page-heading"><div><h1>Herramientas</h1><p>Todo lo que necesitas para estudiar mejor.</p></div></div><div class="study-tool-grid"><button data-study-page="ai"><i>♙</i><strong>StudyIA AI</strong><small>Resuelve dudas, explica conceptos y ayuda a estudiar</small></button><button data-study-page="builder"><i>↗</i><strong>Crear examen</strong><small>Genera exámenes personalizados con IA a partir de tus apuntes o temas</small></button><button data-study-page="notes"><i>□</i><strong>Apuntes</strong><small>Crea, edita y organiza tus apuntes por asignatura</small></button><button data-study-page="planner"><i>▣</i><strong>Planificador</strong><small>Organiza tareas, exámenes y fechas de entrega</small></button><button><i>▱</i><strong>Tarjetas de memoria</strong><small>Crea tarjetas y repasa con repetición espaciada</small></button><button><i>◷</i><strong>Temporizador</strong><small>Método Pomodoro para concentrarte y descansar</small></button><button data-study-page="subjects"><i>▱</i><strong>Asignaturas</strong><small>Crea y gestiona tus asignaturas con colores personalizados</small></button><button data-study-page="stats"><i>▥</i><strong>Estadísticas</strong><small>Visualiza tu progreso, tiempo de estudio y racha</small></button></div></section>
+
+              <section class="study-page" data-study-page-target="subjects" hidden><div class="study-page-heading"><div><h1>Asignaturas</h1><p>Organiza tu estudio por asignatura.</p></div><button class="study-primary-button" type="button">＋ Nueva</button></div><div class="study-empty-card"><div class="study-empty-icon">▱</div><h2>Sin asignaturas</h2><p>Crea tu primera asignatura para empezar a organizar.</p><button class="study-primary-button" type="button">Crear asignatura</button></div></section>
+
+              <section class="study-page" data-study-page-target="notes" hidden><div class="study-page-heading"><div><h1>Apuntes</h1><p>Crea, edita y organiza tus apuntes.</p></div><button class="study-primary-button" type="button">＋ Nuevo</button></div><div class="study-filter-row"><label>⌕ <input placeholder="Buscar apuntes…"></label><select><option>Todas las asignaturas</option></select></div><div class="study-empty-card"><div class="study-empty-icon">□</div><h2>Sin apuntes</h2><p>Crea tu primer apunte para empezar.</p><button class="study-primary-button" type="button">Crear apunte</button></div></section>
+
+              <section class="study-page" data-study-page-target="planner" hidden><div class="study-page-heading"><div><h1>Planificador</h1><p>Organiza tus tareas, exámenes y entregas.</p></div><button class="study-primary-button" type="button">＋ Nueva</button></div><div class="study-tabs"><button class="selected">Pendientes</button><button>Completadas</button><button>Todas</button></div><div class="study-empty-card"><div class="study-empty-icon">▣</div><h2>Sin tareas</h2><p>Crea una nueva tarea para empezar a planificar.</p><button class="study-primary-button" type="button">Crear tarea</button></div></section>
+
+              <section class="study-page" data-study-page-target="stats" hidden><div class="study-page-heading"><div><h1>Estadísticas</h1><p>Tu progreso de estudio en cifras.</p></div></div><div class="study-metric-grid"><article><span>◷</span><small>Tiempo total</small><strong>0<em> min</em></strong></article><article><span class="metric-orange">♨</span><small>Racha actual</small><strong>0<em> días</em></strong></article><article><span class="metric-green">✓</span><small>Tareas completadas</small><strong>0</strong></article><article><span class="metric-blue">↗</span><small>Exámenes</small><strong id="studyAverageScore">0<em> / 0</em></strong></article></div><div class="study-chart-card"><h2>Estudio esta semana</h2><div class="study-chart"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><div><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div></div></div></section>
+
+              <section class="study-page" data-study-page-target="profile" hidden><div class="study-page-heading"><div><h1>Perfil</h1><p>Tu espacio personal de aprendizaje.</p></div></div><div class="study-profile-card"><div class="study-avatar">J</div><div><h2>Estudiante Jarvis</h2><p>Tu progreso se guarda localmente en este dispositivo.</p></div></div></section>
+
+              <section class="study-page study-builder-page" data-study-page-target="builder" hidden>
+                <button class="study-back-link study-builder-back" data-study-page="dashboard">← Volver</button>
+                <div class="study-page-heading study-builder-heading"><div><h1>Crear nuevo examen</h1><p>Configura tu examen y la IA lo generará para ti.</p></div></div>
+                <div class="study-builder-layout">
+                  <form class="study-builder" id="studyBuilder">
+                    <label class="study-field study-topic-field"><span>Tema del examen</span><input id="studyTopic" maxlength="5000" placeholder="Ej: Higiene, desinfección, antisepsia y etanol"></label>
+                    <label class="study-field study-title-field"><span>Nombre del examen <small>(opcional)</small></span><input id="studyTitle" maxlength="160" placeholder="Ej. Repaso de biología"></label>
+                    <p class="study-helper-text">Escribe el tema sobre el que quieres que la IA genere las preguntas. También puedes añadir archivos del temario.</p>
+                    <div class="study-upload study-upload-dropzone" id="studyUploadZone"><div class="study-upload-icon">↥</div><strong>Arrastra archivos aquí o haz clic para seleccionar</strong><small>PNG, JPG, WEBP o GIF · hasta 5 imágenes · 350 KB por imagen</small><label class="study-upload-button">Seleccionar archivos<input id="studyImages" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple></label></div>
+                    <div class="study-image-preview" id="studyImagePreview" aria-live="polite"></div>
+                    <fieldset class="study-field study-type-field"><legend>Tipo de examen</legend><div class="study-type-selector"><button type="button" class="study-type-choice selected" data-study-type-preset="test"><span>▤</span>Tipo test</button><button type="button" class="study-type-choice" data-study-type-preset="development"><span>T</span>Desarrollo</button><button type="button" class="study-type-choice" data-study-type-preset="mixed"><span>▧</span>Mixto</button></div><div class="study-type-inputs" aria-hidden="true"><input class="study-type" type="checkbox" value="multiple_choice" checked><input class="study-type" type="checkbox" value="true_false"><input class="study-type" type="checkbox" value="short_answer"></div></fieldset>
+                    <fieldset class="study-field study-difficulty-field"><legend>Dificultad</legend><div class="study-difficulty-selector"><button type="button" data-study-difficulty="facil">Fácil</button><button type="button" class="selected" data-study-difficulty="medio">Media</button><button type="button" data-study-difficulty="dificil">Difícil</button></div><select id="studyDifficulty" class="study-visually-hidden" aria-hidden="true" tabindex="-1"><option value="facil">Fácil</option><option value="medio" selected>Media</option><option value="dificil">Difícil</option><option value="mixto">Mixta</option></select></fieldset>
+                    <label class="study-field study-question-field"><span>Número de preguntas</span><div class="study-question-control"><span class="study-range-symbol">#</span><input id="studyQuestionCount" type="range" min="1" max="200" value="10"><output id="studyQuestionCountValue">10</output></div></label>
+                    <label class="study-field study-time-field"><span>Tiempo límite</span><select id="studyTimeLimit"><option value="0">Sin límite</option><option value="5">5 minutos</option><option value="10">10 minutos</option><option value="20">20 minutos</option><option value="30">30 minutos</option><option value="60">60 minutos</option></select></label>
+                    <p class="study-privacy-note">El tema y las imágenes se envían al modelo configurado únicamente al pulsar «Generar examen».</p>
+                    <button class="study-generate-button" id="generateStudyExam" type="submit"><span>Generar examen</span><b>→</b></button><div class="study-builder-error" id="studyBuilderError" role="alert" hidden></div>
+                  </form>
+                  <aside class="study-history-panel"><div class="study-panel-heading"><div><span class="study-panel-index">02</span><h2>Historial</h2></div><span class="study-history-count" id="studyHistoryCount">0</span></div><p class="study-history-intro">Tus exámenes y resultados guardados en este equipo.</p><div class="study-history" id="studyHistory"><div class="study-empty">Todavía no hay intentos.<br><span>Tu primer examen aparecerá aquí.</span></div></div><button class="study-secondary-button" id="studyClearHistory" type="button">Borrar historial local</button></aside>
+                </div>
+              </section>
+            </main>
+          </div>
+        </div>
+      </section>
+
+      <section class="study-exam-view" id="studyExamView" hidden>
+        <div class="study-shell study-exam-shell">
+          <div class="study-exam-top"><button class="study-back-button" id="studyBackToBuilder" type="button">← Configurar</button><div class="study-exam-meta"><span id="studyExamDifficultyLabel">MEDIA</span><span id="studyExamTimer" class="study-exam-timer">SIN LÍMITE</span></div></div>
+          <header class="study-exam-heading"><div><div class="study-kicker"><span></span> EXAMEN EN CURSO</div><h1 id="studyExamTitle">Examen</h1><p id="studyExamTopic"></p></div><div class="study-progress-copy"><strong id="studyProgressText">0 / 0</strong><span>respondidas</span></div></header>
+          <div class="study-progress-track"><span id="studyProgressBar"></span></div>
+          <form id="studyExamForm"><div class="study-questions" id="studyQuestions"></div><div class="study-exam-footer"><button class="study-secondary-button" id="studyCancelExam" type="button">Salir sin corregir</button><button class="study-submit-button" id="studySubmitExam" type="submit">Corregir examen <span>→</span></button></div></form>
+        </div>
+      </section>
+
+      <section class="study-result-view" id="studyResultView" hidden>
+        <div class="study-shell"><div class="study-result-head"><button class="study-back-button" id="studyResultBack" type="button">← Nuevo examen</button><div class="study-kicker"><span></span> INFORME DE ESTUDIO</div></div><div class="study-result-hero"><div><h1 id="studyResultTitle">Resultado</h1><p id="studyResultSummary"></p></div><div class="study-score-ring" id="studyScoreRing"><strong id="studyScoreValue">0%</strong><span>acierto</span></div></div><div class="study-result-grid"><div class="study-result-card"><span class="study-stat-label">CORRECTAS</span><strong id="studyCorrectCount">0</strong><small id="studyResultTime">—</small></div><div class="study-result-card"><span class="study-stat-label">PARA REPASAR</span><strong id="studyWrongCount">0</strong><small>preguntas que conviene revisar</small></div><div class="study-result-card"><span class="study-stat-label">DIFICULTAD</span><strong id="studyResultDifficulty">MEDIA</strong><small id="studyResultTopic">—</small></div></div><div class="study-review" id="studyReview"></div><div class="study-result-actions"><button class="study-secondary-button" id="studyRetryExam" type="button">Repetir examen</button><button class="study-submit-button" id="studyNewExam" type="button">Crear otro examen <span>→</span></button></div></div>
+      </section>
+
+      <div class="composer-wrap" id="composerWrap">
         <div class="voice-status" id="voiceStatus" hidden><span class="record-dot"></span> Escuchando… habla ahora <button id="stopVoice" aria-label="Detener">×</button></div>
         <form class="composer" id="composerForm">
           <textarea id="messageInput" rows="1" placeholder="Escribe a Jarvis…" aria-label="Escribe un mensaje"></textarea>
           <div class="attachment-tray" id="attachmentTray" hidden aria-live="polite"></div>
           <div class="composer-tools"><div class="composer-left"><button type="button" class="attachment-button" id="attachButton" aria-label="Adjuntar imágenes o vídeos" title="Adjuntar imágenes o vídeos">⌇</button><input id="fileInput" type="file" accept="image/*,video/*" multiple hidden><div class="composer-hint"><span>↵</span> para enviar <span class="hint-divider">·</span> <span>⇧ ↵</span> nueva línea</div></div><div class="composer-actions"><button type="button" class="mic-button" id="micButton" aria-label="Hablar con Jarvis" title="Hablar con Jarvis"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8"></path></svg></button><button type="submit" class="send-button" id="sendButton" aria-label="Enviar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"></path></svg></button></div></div>
         </form>
-      <div class="fine-print">Imágenes y vídeos sin límite artificial en Jarvis. El modelo online puede imponer sus propios límites.</div>
+        <div class="fine-print">El reconocimiento de voz lo gestiona el navegador. Puedes recordar la autorización para abrir aplicaciones.</div>
       </div>
     </main>
   </div>
@@ -77,7 +164,8 @@
     <div class="dialog-body">
       <label class="field-label" for="providerSelect">Dónde piensa Jarvis</label>
       <select id="providerSelect" class="field-control">
-        <option value="openrouter">Modelo online mediante OpenRouter</option>
+        <option value="openrouter">Modelo gratuito en internet</option>
+        <option value="ollama">Modelo local con Ollama</option>
       </select>
       <div class="provider-details" id="remoteDetails">
         <label class="field-label" for="apiKeyInput">Clave de OpenRouter</label>
@@ -85,7 +173,7 @@
         <label class="field-label" for="remoteModel">Modelo</label>
         <input id="remoteModel" class="field-control" value="openrouter/free" autocomplete="off">
         <p class="field-note">`openrouter/free` elige un modelo gratuito disponible. El cupo diario y los modelos disponibles dependen de OpenRouter.</p>
-        <div class="notice-box"><span>ⓘ</span><p>En este modo, tus mensajes se envían al proveedor del modelo. La clave solo se mantiene mientras Jarvis esté abierto.</p></div>
+        <div class="notice-box"><span>ⓘ</span><p>En este modo, tus mensajes se envían al proveedor del modelo. La clave se guarda protegida en este equipo para no tener que volver a pegarla al reiniciar Jarvis o actualizar la aplicación.</p></div>
       </div>
       <div class="provider-details" id="localDetails" hidden>
         <div class="ollama-status" id="ollamaStatus"><i></i><span>Comprobando Ollama…</span></div>
@@ -95,6 +183,22 @@
         <p class="field-note">Instala Ollama y descarga un modelo compatible con uso de herramientas. En este equipo conviene empezar por uno pequeño.</p>
         <a class="text-link" href="https://ollama.com/download/windows" target="_blank" rel="noreferrer">Descargar Ollama para Windows ↗</a>
       </div>
+      <section class="app-permissions" aria-labelledby="appPermissionsHeading">
+        <h3 id="appPermissionsHeading">Permiso para abrir aplicaciones</h3>
+        <p>Una autorización permite abrir cualquier aplicación, incluidas las que instales más adelante. Solo afecta a la apertura de aplicaciones.</p>
+        <div id="appOpeningPermissionStatus" class="app-opening-permission-status"></div>
+        <button id="revokeAppOpeningPermission" class="remove-app-permission" type="button" hidden>Revocar permiso global</button>
+      </section>
+      <section class="roblox-bridge-settings" aria-labelledby="robloxBridgeHeading">
+        <h3 id="robloxBridgeHeading">Roblox Studio</h3>
+        <p>Jarvis instala un complemento local. Abre Studio, pulsa el botón Jarvis en la pestaña Plugins y acepta la comunicación con este equipo.</p>
+        <div id="robloxBridgeStatus" class="roblox-bridge-status">Comprobando el complemento…</div>
+        <button id="refreshRobloxBridge" class="roblox-refresh-button" type="button">Comprobar conexión</button>
+      </section>
+      <section class="roblox-bridge-settings" aria-labelledby="mediaLabHeading">
+        <h3 id="mediaLabHeading">Laboratorio multimedia</h3>
+        <p>Jarvis puede crear imágenes, vídeos y objetos 3D desde texto y referencias. Guarda los resultados en la carpeta multimedia local. Las composiciones locales no tienen cuota; los generadores públicos pueden tener límites o caídas.</p>
+      </section>
       <div class="settings-error" id="settingsError" role="alert" hidden></div>
     </div>
     <div class="dialog-footer"><button class="secondary-button" id="cancelSettings" type="button">Cancelar</button><button class="primary-button" id="saveSettings" type="button">Guardar ajustes <span>→</span></button></div>
