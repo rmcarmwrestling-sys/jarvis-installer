@@ -34,6 +34,8 @@ public class MainActivity extends Activity {
     private WebView webView;
     private PermissionRequest pendingPermissionRequest;
     private ValueCallback<Uri[]> pendingFileCallback;
+    private int currentTopInset;
+    private int currentBottomInset;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,11 +46,18 @@ public class MainActivity extends Activity {
         getWindow().setStatusBarColor(Color.rgb(7, 18, 29));
         getWindow().setNavigationBarColor(Color.rgb(7, 18, 29));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            getWindow().setDecorFitsSystemWindows(true);
+            // Let the WebView paint the Jarvis background edge-to-edge. The
+            // page itself receives the insets as CSS variables below, so its
+            // controls start below the status icons without moving the
+            // background down.
+            getWindow().setDecorFitsSystemWindows(false);
         } else {
-            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+            getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         }
-        webView.setFitsSystemWindows(true);
+        webView.setFitsSystemWindows(false);
         final int resourceStatusBar = getSystemBarDimension("status_bar_height");
         final int resourceNavigationBar = getSystemBarDimension("navigation_bar_height");
         webView.setOnApplyWindowInsetsListener((view, insets) -> {
@@ -69,10 +78,11 @@ public class MainActivity extends Activity {
                 top = Math.max(top, resourceStatusBar);
                 bottom = Math.max(bottom, resourceNavigationBar);
             }
-            view.setPadding(0, top, 0, bottom);
+            currentTopInset = top;
+            currentBottomInset = bottom;
+            applyPageInsets(view, top, bottom);
             return insets;
         });
-        if (Build.VERSION.SDK_INT >= 35) webView.setPadding(0, resourceStatusBar, 0, resourceNavigationBar);
 
         webView.setBackgroundColor(0xFF07121D);
         webView.getSettings().setJavaScriptEnabled(true);
@@ -98,6 +108,14 @@ public class MainActivity extends Activity {
             @Override
             public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 return assetLoader.shouldInterceptRequest(request.getUrl());
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                int top = currentTopInset > 0 ? currentTopInset : resourceStatusBar;
+                int bottom = currentBottomInset > 0 ? currentBottomInset : resourceNavigationBar;
+                applyPageInsets(view, top, bottom);
             }
         });
         webView.setWebChromeClient(new WebChromeClient() {
@@ -146,6 +164,16 @@ public class MainActivity extends Activity {
     private int getSystemBarDimension(String name) {
         int id = getResources().getIdentifier(name, "dimen", "android");
         return id == 0 ? 0 : getResources().getDimensionPixelSize(id);
+    }
+
+    private void applyPageInsets(WebView view, int top, int bottom) {
+        if (view == null) return;
+        String script = "document.documentElement.style.setProperty('--jarvis-status-top','"
+                + Math.max(0, top)
+                + "px');document.documentElement.style.setProperty('--jarvis-nav-bottom','"
+                + Math.max(0, bottom)
+                + "px');";
+        view.evaluateJavascript(script, null);
     }
 
     @Override
