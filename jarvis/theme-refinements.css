@@ -244,4 +244,17 @@ body:not(.study-active) .connection-pill{box-shadow:0 8px 20px rgba(0,0,0,.28),0
   body:not(.study-active) .send-button{width:42px;height:42px;border-radius:13px}
   body:not(.study-active) .attachment-tray{order:3;flex:0 0 100%;width:100%}
   body:not(.study-active) .attachment-menu{bottom:calc(100% + 8px)}
+  body:not(.study-active) .mobile-menu-button{
+    width:56px!important;
+    height:56px!important;
+    border-radius:50%!important;
+    border-color:rgba(91,211,238,.46)!important;
+    background:rgba(10,24,37,.82)!important;
+    box-shadow:0 10px 24px rgba(0,0,0,.3),0 0 18px rgba(58,196,226,.1)!important;
+  }
+  body:not(.study-active) #attachButton,
+  body:not(.study-active) .mic-button,
+  body:not(.study-active) .send-button{border-radius:50%!important}
+  body:not(.study-active) .mic-button{width:44px;height:44px}
+  body:not(.study-active) .send-button{width:52px;height:52px}
 }
