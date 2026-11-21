@@ -181,7 +181,8 @@ body:not(.study-active) .connection-pill{box-shadow:0 8px 20px rgba(0,0,0,.28),0
   body:not(.study-active) .eyebrow,
   body:not(.study-active) .system-ribbon,
   body:not(.study-active) .prompt-grid,
-  body:not(.study-active) .fine-print{display:none!important}
+  body:not(.study-active) .fine-print,
+  body:not(.study-active) .composer-hint{display:none!important}
   body:not(.study-active) .topbar{justify-content:flex-end}
   body:not(.study-active) .topbar-right{margin-left:auto}
   body:not(.study-active) .welcome{padding-top:18px;padding-bottom:18px}
