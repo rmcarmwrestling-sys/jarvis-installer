@@ -1309,3 +1309,19 @@ visibleHistory();
 renderMobileChats();
 refreshStatus();
 setVoiceCapability();
+
+// Keep the composer above Android's on-screen keyboard even on devices where
+// the keyboard is rendered as an overlay instead of resizing the WebView.
+function syncVisualKeyboardInset() {
+  if (!window.visualViewport) return;
+  const viewport = window.visualViewport;
+  const keyboardInset = Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop));
+  document.documentElement.style.setProperty('--jarvis-ime-js', `${keyboardInset}px`);
+}
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', syncVisualKeyboardInset, { passive: true });
+  window.visualViewport.addEventListener('scroll', syncVisualKeyboardInset, { passive: true });
+  window.addEventListener('resize', syncVisualKeyboardInset, { passive: true });
+  syncVisualKeyboardInset();
+}

@@ -16,6 +16,7 @@ import android.os.Bundle;
 import android.graphics.Color;
 import android.view.View;
 import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
@@ -36,12 +37,14 @@ public class MainActivity extends Activity {
     private ValueCallback<Uri[]> pendingFileCallback;
     private int currentTopInset;
     private int currentBottomInset;
+    private int currentImeInset;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         webView = new WebView(this);
         setContentView(webView);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         getWindow().setStatusBarColor(Color.rgb(7, 18, 29));
         getWindow().setNavigationBarColor(Color.rgb(7, 18, 29));
@@ -63,11 +66,13 @@ public class MainActivity extends Activity {
         webView.setOnApplyWindowInsetsListener((view, insets) -> {
             int top = 0;
             int bottom = 0;
+            int imeBottom = 0;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 int insetTypes = WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout();
                 android.graphics.Insets bars = insets.getInsetsIgnoringVisibility(insetTypes);
                 top = bars.top;
                 bottom = bars.bottom;
+                imeBottom = insets.getInsets(WindowInsets.Type.ime()).bottom;
             } else {
                 top = insets.getSystemWindowInsetTop();
                 bottom = insets.getSystemWindowInsetBottom();
@@ -80,7 +85,8 @@ public class MainActivity extends Activity {
             }
             currentTopInset = top;
             currentBottomInset = bottom;
-            applyPageInsets(view, top, bottom);
+            currentImeInset = imeBottom;
+            applyPageInsets(view, top, bottom, imeBottom);
             return insets;
         });
 
@@ -115,7 +121,7 @@ public class MainActivity extends Activity {
                 super.onPageFinished(view, url);
                 int top = currentTopInset > 0 ? currentTopInset : resourceStatusBar;
                 int bottom = currentBottomInset > 0 ? currentBottomInset : resourceNavigationBar;
-                applyPageInsets(view, top, bottom);
+                applyPageInsets(view, top, bottom, currentImeInset);
             }
         });
         webView.setWebChromeClient(new WebChromeClient() {
@@ -166,7 +172,7 @@ public class MainActivity extends Activity {
         return id == 0 ? 0 : getResources().getDimensionPixelSize(id);
     }
 
-    private void applyPageInsets(View view, int top, int bottom) {
+    private void applyPageInsets(View view, int top, int bottom, int imeBottom) {
         if (!(view instanceof WebView)) return;
         // WindowInsets are reported in physical pixels, while the WebView
         // layout uses CSS pixels. Convert them using the device density so
@@ -177,6 +183,7 @@ public class MainActivity extends Activity {
         if (density <= 0f) density = 1f;
         int cssTop = Math.round(Math.max(0, top) / density);
         int cssBottom = Math.round(Math.max(0, bottom) / density);
+        int cssImeBottom = Math.round(Math.max(0, imeBottom) / density);
         // Scale the visual gap from the actual status-bar inset. This keeps
         // the header proportionate on phones, tablets, cutout displays and
         // devices with different density values instead of using one fixed
@@ -191,6 +198,8 @@ public class MainActivity extends Activity {
                 + cssContentTop
                 + "px');document.documentElement.style.setProperty('--jarvis-nav-bottom','"
                 + cssBottom
+                + "px');document.documentElement.style.setProperty('--jarvis-ime-native','"
+                + cssImeBottom
                 + "px');document.documentElement.style.setProperty('--jarvis-device-width','"
                 + cssWidth
                 + "px');document.documentElement.style.setProperty('--jarvis-device-height','"
