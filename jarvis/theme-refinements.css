@@ -196,3 +196,52 @@ body:not(.study-active) .connection-pill{box-shadow:0 8px 20px rgba(0,0,0,.28),0
 .attachment-menu-icon{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:rgba(176,226,237,.12);color:#a9eaf2;font-size:19px;line-height:1}
 .attachment-menu-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 @media(max-width:760px){.attachment-menu{left:4px;bottom:54px;min-width:188px}}
+
+/* Compositor móvil compacto, con el texto en la misma fila que «+». */
+@media(max-width:760px){
+  body:not(.study-active) .composer{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:0;
+    min-height:62px;
+    padding:8px 10px;
+    border-radius:28px;
+  }
+  body:not(.study-active) .composer-tools,
+  body:not(.study-active) .composer-left{display:contents}
+  body:not(.study-active) #attachButton{
+    order:0;
+    flex:0 0 42px;
+    width:42px;
+    height:42px;
+    margin-right:3px;
+    border-radius:50%;
+    font-size:32px;
+    font-weight:300;
+    line-height:1;
+  }
+  body:not(.study-active) #messageInput{
+    order:1;
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    height:38px;
+    min-height:38px;
+    max-height:110px;
+    padding:4px 3px;
+    font-size:15px;
+    line-height:1.35;
+    align-self:center;
+  }
+  body:not(.study-active) .composer-actions{
+    order:2;
+    flex:0 0 auto;
+    margin-left:4px;
+    gap:5px;
+  }
+  body:not(.study-active) .mic-button{width:38px;height:38px;border-radius:50%}
+  body:not(.study-active) .send-button{width:42px;height:42px;border-radius:13px}
+  body:not(.study-active) .attachment-tray{order:3;flex:0 0 100%;width:100%}
+  body:not(.study-active) .attachment-menu{bottom:calc(100% + 8px)}
+}
