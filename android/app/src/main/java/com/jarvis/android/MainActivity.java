@@ -64,16 +64,16 @@ public class MainActivity extends Activity {
             int top = 0;
             int bottom = 0;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+                int insetTypes = WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout();
+                android.graphics.Insets bars = insets.getInsetsIgnoringVisibility(insetTypes);
                 top = bars.top;
                 bottom = bars.bottom;
             } else {
                 top = insets.getSystemWindowInsetTop();
                 bottom = insets.getSystemWindowInsetBottom();
             }
-            // Android 15 may keep the WebView edge-to-edge even when the
-            // decor asks for fitting. Keep a resource-based fallback so the
-            // Jarvis header can never sit underneath the clock or status icons.
+            // Keep a resource-based fallback for devices that report a zero
+            // inset while using gesture navigation or edge-to-edge mode.
             if (Build.VERSION.SDK_INT >= 35) {
                 top = Math.max(top, resourceStatusBar);
                 bottom = Math.max(bottom, resourceNavigationBar);
@@ -177,16 +177,24 @@ public class MainActivity extends Activity {
         if (density <= 0f) density = 1f;
         int cssTop = Math.round(Math.max(0, top) / density);
         int cssBottom = Math.round(Math.max(0, bottom) / density);
-        // The reference layout leaves a small visual gap between the status
-        // bar and the first row of controls. Keep it separate from the raw
-        // safe-area inset so the page background still reaches the top edge.
-        int cssContentTop = cssTop + 28;
+        // Scale the visual gap from the actual status-bar inset. This keeps
+        // the header proportionate on phones, tablets, cutout displays and
+        // devices with different density values instead of using one fixed
+        // distance for every Android model.
+        int adaptiveGap = cssTop == 0 ? 0 : Math.max(16, Math.min(28, Math.round(cssTop * 0.85f)));
+        int cssContentTop = cssTop + adaptiveGap;
+        int cssWidth = Math.round(getResources().getDisplayMetrics().widthPixels / density);
+        int cssHeight = Math.round(getResources().getDisplayMetrics().heightPixels / density);
         String script = "document.documentElement.style.setProperty('--jarvis-status-top','"
                 + cssTop
                 + "px');document.documentElement.style.setProperty('--jarvis-content-top','"
                 + cssContentTop
                 + "px');document.documentElement.style.setProperty('--jarvis-nav-bottom','"
                 + cssBottom
+                + "px');document.documentElement.style.setProperty('--jarvis-device-width','"
+                + cssWidth
+                + "px');document.documentElement.style.setProperty('--jarvis-device-height','"
+                + cssHeight
                 + "px');";
         ((WebView) view).evaluateJavascript(script, null);
     }

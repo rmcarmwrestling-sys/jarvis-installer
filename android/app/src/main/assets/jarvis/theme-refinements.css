@@ -173,3 +173,4 @@ body:not(.study-active) .prompt-card{background:#0d1a28!important;border-color:r
 body:not(.study-active) .prompt-card:hover{background:#10263a!important;box-shadow:0 17px 32px rgba(0,0,0,.42),0 0 20px rgba(52,201,227,.12),inset 0 1px rgba(185,241,255,.1)!important;transform:translateY(-3px)}
 body:not(.study-active) .mobile-menu-button,
 body:not(.study-active) .connection-pill{box-shadow:0 8px 20px rgba(0,0,0,.28),0 0 0 1px rgba(91,211,238,.04)}
+@media(max-width:760px){body:not(.study-active)>.app-shell{height:100dvh;min-height:100dvh}}
