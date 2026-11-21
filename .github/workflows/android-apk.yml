@@ -48,8 +48,8 @@ jobs:
       - name: Publicar APK en GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.6.7
-          name: Jarvis Android v1.6.7
+          tag_name: v1.6.8
+          name: Jarvis Android v1.6.8
           body: |-
             Aplicación Android nativa de Jarvis.
 

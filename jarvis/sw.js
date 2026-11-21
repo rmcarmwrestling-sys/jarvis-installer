@@ -1,4 +1,4 @@
-const CACHE = 'jarvis-android-v1';
+const CACHE = 'jarvis-android-v2';
 const ASSETS = [
   './', './index.html', './styles.css', './theme-futurista.css', './theme-refinements.css',
   './app.js', './manifest.webmanifest', './icon.svg'

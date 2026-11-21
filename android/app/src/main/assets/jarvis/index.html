@@ -12,6 +12,29 @@
   <link rel="stylesheet" href="theme-refinements.css">
 </head>
 <body>
+  <section class="auth-screen" id="authScreen" hidden aria-labelledby="authTitle">
+    <div class="auth-content">
+      <div class="auth-brand-mark" aria-hidden="true"><span>J</span></div>
+      <h1 id="authTitle">JARVIS</h1>
+      <p class="auth-subtitle">Tu asistente personal</p>
+      <div class="auth-choice-list" id="authChoices">
+        <button class="auth-choice auth-google" id="authGoogle" type="button"><span class="auth-google-mark">G</span><span>Continuar con Google</span></button>
+        <button class="auth-choice auth-other" id="authOther" type="button">Iniciar sesión de otra forma</button>
+      </div>
+      <form class="auth-form" id="authForm" hidden>
+        <button class="auth-back" id="authBack" type="button">← Volver</button>
+        <h2 id="authFormTitle">Crear tu cuenta</h2>
+        <p id="authFormHint">Crea una cuenta local para guardar tus conversaciones en este dispositivo.</p>
+        <label id="authNameField">Nombre<input id="authName" type="text" autocomplete="name" maxlength="80" placeholder="Tu nombre"></label>
+        <label>Correo electrónico<input id="authEmail" type="email" autocomplete="email" maxlength="160" placeholder="tu@correo.com" required></label>
+        <label id="authPasswordField">Contraseña<input id="authPassword" type="password" autocomplete="current-password" minlength="4" maxlength="120" placeholder="Mínimo 4 caracteres"></label>
+        <button class="auth-submit" id="authSubmit" type="submit">Crear cuenta</button>
+        <button class="auth-switch" id="authSwitch" type="button">¿Ya tienes una cuenta? Iniciar sesión</button>
+        <div class="auth-message" id="authMessage" role="alert" aria-live="polite"></div>
+      </form>
+      <p class="auth-privacy">Tus conversaciones se guardan en este dispositivo y se asocian a tu cuenta.</p>
+    </div>
+  </section>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">

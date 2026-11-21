@@ -3,6 +3,10 @@ const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector
 const HISTORY_KEY = 'jarvis.chat.v1';
 const APP_OPENING_PERMISSION_KEY = 'jarvis.app-opening-authorized.v1';
 const STUDY_HISTORY_KEY = 'jarvis.study.history.v1';
+const AUTH_ACCOUNTS_KEY = 'jarvis.accounts.v1';
+const AUTH_SESSION_KEY = 'jarvis.session.v1';
+const ACCOUNT_HISTORY_PREFIX = 'jarvis.chat.account.v1';
+const ACCOUNT_STUDY_PREFIX = 'jarvis.study.history.account.v1';
 const MOBILE_CONFIG_KEY = 'jarvis.android.config.v2';
 const OPENROUTER_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 const IS_ANDROID_APP = Boolean(window.JarvisAndroid) || location.hostname === 'appassets.androidplatform.net';
@@ -34,9 +38,48 @@ const mobileTools = [
   { type: 'function', function: { name: 'generate_image', description: 'Crear una imagen desde una descripción y devolverla para verla en Jarvis.', parameters: { type: 'object', properties: { prompt: { type: 'string' }, width: { type: 'integer', minimum: 256, maximum: 1536 }, height: { type: 'integer', minimum: 256, maximum: 1536 } }, required: ['prompt'], additionalProperties: false } } },
 ];
 
-function loadStudyHistory() {
+function readAuthAccounts() {
   try {
-    const value = JSON.parse(localStorage.getItem(STUDY_HISTORY_KEY) || '[]');
+    const value = JSON.parse(localStorage.getItem(AUTH_ACCOUNTS_KEY) || '[]');
+    return Array.isArray(value) ? value.filter(account => account && typeof account === 'object' && account.email && account.id) : [];
+  } catch { return []; }
+}
+
+function writeAuthAccounts(accounts) {
+  localStorage.setItem(AUTH_ACCOUNTS_KEY, JSON.stringify(accounts.slice(0, 12)));
+}
+
+function readInitialAuthAccount() {
+  try {
+    const session = JSON.parse(localStorage.getItem(AUTH_SESSION_KEY) || 'null');
+    if (!session) return null;
+    const accounts = readAuthAccounts();
+    return accounts.find(account => account.id === session.id || String(account.email).toLowerCase() === String(session.email || '').toLowerCase()) || null;
+  } catch { return null; }
+}
+
+function accountStorageKey(prefix, account) {
+  const id = encodeURIComponent(String(account?.id || account?.email || 'local'));
+  return `${prefix}.${id}`;
+}
+
+function loadChatHistory(account = null) {
+  try {
+    const accountKey = account ? accountStorageKey(ACCOUNT_HISTORY_PREFIX, account) : HISTORY_KEY;
+    let raw = localStorage.getItem(accountKey);
+    // Migrate the previous device-wide history into the first account that signs in.
+    if (!raw && account) raw = localStorage.getItem(HISTORY_KEY);
+    const value = JSON.parse(raw || '[]');
+    return Array.isArray(value) ? value.filter(item => item && ['user', 'assistant', 'tool'].includes(item.role)).slice(-80) : [];
+  } catch { return []; }
+}
+
+function loadStudyHistory(account = null) {
+  try {
+    const accountKey = account ? accountStorageKey(ACCOUNT_STUDY_PREFIX, account) : STUDY_HISTORY_KEY;
+    let raw = localStorage.getItem(accountKey);
+    if (!raw && account) raw = localStorage.getItem(STUDY_HISTORY_KEY);
+    const value = JSON.parse(raw || '[]');
     return Array.isArray(value) ? value.filter(item => item && typeof item === 'object').slice(0, 40) : [];
   } catch { return []; }
 }
@@ -46,16 +89,13 @@ function loadAppOpeningPermission() {
   catch { return false; }
 }
 
-const state = {
-  messages: [], provider: 'openrouter', model: 'openrouter/free', hasKey: false,
-  ollama: { available: false, models: [] }, appOpeningAuthorized: loadAppOpeningPermission(), busy: false, recognition: null, toastTimer: null,
-  studyImages: [], studyExam: null, studyAnswers: {}, studyTimer: null, studyTimerEnds: 0, studyHistory: loadStudyHistory(), studyPage: 'dashboard', activeView: 'chat', attachments: [],
-};
+const initialAuthAccount = readInitialAuthAccount();
 
-try {
-  const stored = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-  if (Array.isArray(stored)) state.messages = stored.filter(item => item && ['user', 'assistant', 'tool'].includes(item.role)).slice(-80);
-} catch { state.messages = []; }
+const state = {
+  account: initialAuthAccount, authenticated: Boolean(initialAuthAccount), messages: loadChatHistory(initialAuthAccount), provider: 'openrouter', model: 'openrouter/free', hasKey: false,
+  ollama: { available: false, models: [] }, appOpeningAuthorized: loadAppOpeningPermission(), busy: false, recognition: null, toastTimer: null,
+  studyImages: [], studyExam: null, studyAnswers: {}, studyTimer: null, studyTimerEnds: 0, studyHistory: loadStudyHistory(initialAuthAccount), studyPage: 'dashboard', activeView: 'chat', attachments: [],
+};
 
 function saveHistory() {
   const saved = state.messages.slice(-80).map(message => {
@@ -64,7 +104,140 @@ function saveHistory() {
     if (Array.isArray(result.attachments)) result.attachments = result.attachments.map(item => ({ id: item.id, kind: item.kind, name: item.name, type: item.type, size: item.size, poster: item.poster }));
     return result;
   });
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(saved)); } catch { /* Private browsing can disable storage. */ }
+  try { localStorage.setItem(state.account ? accountStorageKey(ACCOUNT_HISTORY_PREFIX, state.account) : HISTORY_KEY, JSON.stringify(saved)); } catch { /* Private browsing can disable storage. */ }
+}
+
+let authMode = 'login';
+
+async function hashAuthPassword(value) {
+  const text = String(value || '');
+  try {
+    if (window.crypto?.subtle) {
+      const bytes = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+      return [...new Uint8Array(bytes)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+    }
+  } catch { /* Use the compatibility fallback below on older WebViews. */ }
+  return btoa(unescape(encodeURIComponent(text)));
+}
+
+function setAuthMessage(message = '', success = false) {
+  const node = $('#authMessage');
+  if (!node) return;
+  node.textContent = message;
+  node.classList.toggle('success', success);
+}
+
+function showAuthForm(mode = 'login') {
+  authMode = mode;
+  const choices = $('#authChoices');
+  const form = $('#authForm');
+  const nameField = $('#authNameField');
+  const passwordField = $('#authPasswordField');
+  const title = $('#authFormTitle');
+  const hint = $('#authFormHint');
+  const submit = $('#authSubmit');
+  const switchButton = $('#authSwitch');
+  if (!choices || !form) return;
+  choices.hidden = true;
+  form.hidden = false;
+  nameField.hidden = mode === 'login' || mode === 'google';
+  passwordField.hidden = mode === 'google';
+  $('#authPassword').required = mode !== 'google';
+  if (mode === 'google') {
+    title.textContent = 'Continuar con Google';
+    hint.textContent = 'Escribe el correo que usarás para guardar tu cuenta en este dispositivo.';
+    submit.textContent = 'Continuar';
+    switchButton.hidden = true;
+  } else if (mode === 'register') {
+    title.textContent = 'Crear tu cuenta';
+    hint.textContent = 'Crea una cuenta local para guardar tus conversaciones en este dispositivo.';
+    submit.textContent = 'Crear cuenta';
+    switchButton.hidden = false;
+    switchButton.textContent = '¿Ya tienes una cuenta? Iniciar sesión';
+  } else {
+    title.textContent = 'Iniciar sesión';
+    hint.textContent = 'Accede a la cuenta guardada en este dispositivo.';
+    submit.textContent = 'Iniciar sesión';
+    switchButton.hidden = false;
+    switchButton.textContent = '¿No tienes una cuenta? Crear cuenta';
+  }
+  setAuthMessage();
+  $('#authEmail')?.focus();
+}
+
+function showAuthChoices() {
+  $('#authChoices').hidden = false;
+  $('#authForm').hidden = true;
+  setAuthMessage();
+}
+
+function finishAuthentication(account) {
+  state.account = account;
+  state.authenticated = true;
+  try { localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ id: account.id, email: account.email })); } catch { /* The page remains usable for this session. */ }
+  state.messages = loadChatHistory(account);
+  state.studyHistory = loadStudyHistory(account);
+  saveHistory();
+  saveStudyHistory();
+  document.body.classList.remove('auth-required');
+  const screen = $('#authScreen');
+  if (screen) screen.hidden = true;
+  visibleHistory();
+  renderMobileChats();
+  renderStudyHistory();
+  refreshStatus();
+  $('#messageInput')?.focus();
+}
+
+async function submitAuthentication(event) {
+  event.preventDefault();
+  const email = String($('#authEmail')?.value || '').trim().toLowerCase();
+  const password = String($('#authPassword')?.value || '');
+  const name = String($('#authName')?.value || '').trim();
+  if (!email || !email.includes('@')) { setAuthMessage('Escribe un correo electrónico válido.'); return; }
+  const submit = $('#authSubmit');
+  submit.disabled = true;
+  try {
+    const accounts = readAuthAccounts();
+    const existing = accounts.find(account => String(account.email).toLowerCase() === email);
+    if (authMode === 'google') {
+      if (existing?.passwordHash) { setAuthMessage('Esta cuenta usa contraseña. Inicia sesión de otra forma.'); return; }
+      if (existing) { finishAuthentication(existing); return; }
+      const account = { id: (window.crypto?.randomUUID?.() || `account-${Date.now()}`), name: email.split('@')[0], email, provider: 'google', createdAt: new Date().toISOString() };
+      writeAuthAccounts([account, ...accounts]);
+      finishAuthentication(account);
+      return;
+    }
+    if (authMode === 'register') {
+      if (existing) { setAuthMessage('Ya existe una cuenta con ese correo. Inicia sesión.'); return; }
+      if (password.length < 4) { setAuthMessage('La contraseña debe tener al menos 4 caracteres.'); return; }
+      const account = { id: (window.crypto?.randomUUID?.() || `account-${Date.now()}`), name: name || email.split('@')[0], email, passwordHash: await hashAuthPassword(password), provider: 'local', createdAt: new Date().toISOString() };
+      writeAuthAccounts([account, ...accounts]);
+      finishAuthentication(account);
+      return;
+    }
+    if (!existing || !existing.passwordHash || existing.passwordHash !== await hashAuthPassword(password)) { setAuthMessage('El correo o la contraseña no son correctos.'); return; }
+    finishAuthentication(existing);
+  } catch (error) {
+    setAuthMessage(error.message || 'No se pudo guardar la cuenta en este dispositivo.');
+  } finally { submit.disabled = false; }
+}
+
+function initializeAuthentication() {
+  const screen = $('#authScreen');
+  if (!screen) return;
+  if (state.account) {
+    screen.hidden = true;
+    document.body.classList.remove('auth-required');
+  } else {
+    screen.hidden = false;
+    document.body.classList.add('auth-required');
+  }
+  $('#authGoogle')?.addEventListener('click', () => showAuthForm('google'));
+  $('#authOther')?.addEventListener('click', () => showAuthForm(readAuthAccounts().length ? 'login' : 'register'));
+  $('#authBack')?.addEventListener('click', showAuthChoices);
+  $('#authSwitch')?.addEventListener('click', () => showAuthForm(authMode === 'login' ? 'register' : 'login'));
+  $('#authForm')?.addEventListener('submit', submitAuthentication);
 }
 
 function saveAppOpeningPermission() {
@@ -929,7 +1102,7 @@ function showChatView() {
 }
 
 function saveStudyHistory() {
-  try { localStorage.setItem(STUDY_HISTORY_KEY, JSON.stringify(state.studyHistory.slice(0, 40))); }
+  try { localStorage.setItem(state.account ? accountStorageKey(ACCOUNT_STUDY_PREFIX, state.account) : STUDY_HISTORY_KEY, JSON.stringify(state.studyHistory.slice(0, 40))); }
   catch { /* El historial es opcional y no debe bloquear Study. */ }
 }
 
@@ -1338,6 +1511,7 @@ $('#projectsLink').addEventListener('click', async () => {
 });
 $$('.prompt-card').forEach(button => button.addEventListener('click', () => sendCurrent(button.dataset.prompt)));
 
+initializeAuthentication();
 visibleHistory();
 renderMobileChats();
 refreshStatus();
