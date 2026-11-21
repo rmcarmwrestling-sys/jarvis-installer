@@ -168,10 +168,19 @@ public class MainActivity extends Activity {
 
     private void applyPageInsets(View view, int top, int bottom) {
         if (!(view instanceof WebView)) return;
+        // WindowInsets are reported in physical pixels, while the WebView
+        // layout uses CSS pixels. Convert them using the device density so
+        // the header sits at the same distance from the status icons on every
+        // phone instead of becoming several times too low on high-density
+        // screens.
+        float density = getResources().getDisplayMetrics().density;
+        if (density <= 0f) density = 1f;
+        int cssTop = Math.round(Math.max(0, top) / density);
+        int cssBottom = Math.round(Math.max(0, bottom) / density);
         String script = "document.documentElement.style.setProperty('--jarvis-status-top','"
-                + Math.max(0, top)
+                + cssTop
                 + "px');document.documentElement.style.setProperty('--jarvis-nav-bottom','"
-                + Math.max(0, bottom)
+                + cssBottom
                 + "px');";
         ((WebView) view).evaluateJavascript(script, null);
     }
