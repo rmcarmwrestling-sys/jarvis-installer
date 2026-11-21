@@ -177,8 +177,14 @@ public class MainActivity extends Activity {
         if (density <= 0f) density = 1f;
         int cssTop = Math.round(Math.max(0, top) / density);
         int cssBottom = Math.round(Math.max(0, bottom) / density);
+        // The reference layout leaves a small visual gap between the status
+        // bar and the first row of controls. Keep it separate from the raw
+        // safe-area inset so the page background still reaches the top edge.
+        int cssContentTop = cssTop + 20;
         String script = "document.documentElement.style.setProperty('--jarvis-status-top','"
                 + cssTop
+                + "px');document.documentElement.style.setProperty('--jarvis-content-top','"
+                + cssContentTop
                 + "px');document.documentElement.style.setProperty('--jarvis-nav-bottom','"
                 + cssBottom
                 + "px');";
