@@ -174,3 +174,15 @@ body:not(.study-active) .prompt-card:hover{background:#10263a!important;box-shad
 body:not(.study-active) .mobile-menu-button,
 body:not(.study-active) .connection-pill{box-shadow:0 8px 20px rgba(0,0,0,.28),0 0 0 1px rgba(91,211,238,.04)}
 @media(max-width:760px){body:not(.study-active)>.app-shell{height:100dvh;min-height:100dvh}}
+
+/* Vista móvil limpia: conserva el menú, el orbe y el chat. */
+@media(max-width:760px){
+  body:not(.study-active) .topbar-left,
+  body:not(.study-active) .eyebrow,
+  body:not(.study-active) .system-ribbon,
+  body:not(.study-active) .prompt-grid,
+  body:not(.study-active) .fine-print{display:none!important}
+  body:not(.study-active) .topbar{justify-content:flex-end}
+  body:not(.study-active) .topbar-right{margin-left:auto}
+  body:not(.study-active) .welcome{padding-top:18px;padding-bottom:18px}
+}
