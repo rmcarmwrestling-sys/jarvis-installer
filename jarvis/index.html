@@ -39,7 +39,7 @@
     <main class="main-panel">
       <header class="topbar">
         <div class="topbar-left"><div class="mobile-mark">J</div><span class="topbar-title">JARVIS</span><span class="connection-pill"><i></i><span id="connectionLabel">LOCAL</span></span><span class="console-crumb">NÚCLEO <b>01</b></span></div>
-        <div class="topbar-right"><span class="privacy-note"><span>⌑</span> INTERFAZ LOCAL</span><button class="topbar-shortcut" id="studyTop" type="button">Study</button><button class="icon-button" id="settingsTop" aria-label="Ajustes" title="Ajustes">⚙</button></div>
+        <div class="topbar-right"><span class="privacy-note"><span>⌑</span> INTERFAZ LOCAL</span><button class="topbar-shortcut" id="studyTop" type="button">Study</button><button class="icon-button" id="settingsTop" aria-label="Ajustes" title="Ajustes">⚙</button><button class="icon-button mobile-menu-button" id="mobileMenuButton" type="button" aria-label="Abrir menú" aria-expanded="false" title="Menú">☰</button></div>
       </header>
 
       <section class="chat-stage" id="chatStage">
@@ -158,6 +158,28 @@
       </div>
     </main>
   </div>
+
+  <div class="mobile-drawer-backdrop" id="mobileDrawerBackdrop" hidden></div>
+  <aside class="mobile-drawer" id="mobileDrawer" aria-hidden="true" aria-label="Menú de Jarvis">
+    <header class="mobile-drawer-head">
+      <div class="mobile-drawer-brand"><div class="brand-mark"><span></span><i></i></div><div><strong>JARVIS</strong><small>ASISTENTE PERSONAL</small></div></div>
+      <button class="icon-button" id="mobileDrawerClose" type="button" aria-label="Cerrar menú">×</button>
+    </header>
+    <button class="mobile-drawer-new" id="mobileDrawerNewChat" type="button"><span>＋</span> Nueva conversación</button>
+    <nav class="mobile-drawer-nav" aria-label="Secciones de Jarvis">
+      <button class="mobile-drawer-item selected" id="mobileDrawerChat" type="button"><span>◉</span> Conversación</button>
+      <button class="mobile-drawer-item" id="mobileDrawerStudy" type="button"><span>✦</span> Study</button>
+      <button class="mobile-drawer-item" id="mobileDrawerProjects" type="button"><span>▤</span> Mis proyectos</button>
+    </nav>
+    <section class="mobile-drawer-section">
+      <div class="mobile-drawer-label">CHATS</div>
+      <div class="mobile-chat-list" id="mobileChatList"><div class="mobile-chat-empty">Todavía no hay conversaciones.</div></div>
+    </section>
+    <div class="mobile-drawer-spacer"></div>
+    <button class="mobile-drawer-item" id="mobileDrawerSettings" type="button"><span>⚙</span> Ajustes</button>
+    <button class="mobile-drawer-item" id="mobileDrawerAccount" type="button"><span>●</span> Mi cuenta</button>
+    <div class="mobile-drawer-account"><strong>Jarvis móvil</strong><small>Configuración guardada en este dispositivo</small></div>
+  </aside>
 
   <dialog class="settings-dialog" id="settingsDialog">
     <form method="dialog" class="dialog-head"><div><div class="dialog-kicker">PERSONALIZA TU JARVIS</div><h2>Ajustes</h2></div><button class="icon-button close-dialog" value="cancel" aria-label="Cerrar">×</button></form>

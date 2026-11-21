@@ -328,6 +328,7 @@ function appendMessage(message) {
     $('#welcome').hidden = true;
     addMessageElement(message.role, readable(message.content), message.attachments || []);
   }
+  renderMobileChats();
   scrollToBottom();
 }
 
@@ -835,6 +836,49 @@ function setActiveNav(id) {
   $$('.side-link').forEach(link => link.classList.toggle('selected', link.id === id));
 }
 
+function renderMobileChats() {
+  const list = $('#mobileChatList');
+  if (!list) return;
+  list.replaceChildren();
+  const prompts = state.messages.filter(message => message.role === 'user' && readable(message.content)).map(message => readable(message.content).trim()).filter(Boolean);
+  if (!prompts.length) {
+    const empty = document.createElement('div');
+    empty.className = 'mobile-chat-empty';
+    empty.textContent = 'Todavía no hay conversaciones.';
+    list.append(empty);
+    return;
+  }
+  prompts.slice(-8).reverse().forEach((prompt, index) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = `mobile-chat-item${index === 0 ? ' selected' : ''}`;
+    item.textContent = prompt.replace(/\s+/g, ' ').slice(0, 62);
+    item.addEventListener('click', () => { closeMobileDrawer(); showChatView(); $('#messageInput').focus(); });
+    list.append(item);
+  });
+}
+
+function openMobileDrawer() {
+  const drawer = $('#mobileDrawer');
+  const backdrop = $('#mobileDrawerBackdrop');
+  if (!drawer || !backdrop) return;
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+  backdrop.hidden = false;
+  $('#mobileMenuButton')?.setAttribute('aria-expanded', 'true');
+  renderMobileChats();
+}
+
+function closeMobileDrawer() {
+  const drawer = $('#mobileDrawer');
+  const backdrop = $('#mobileDrawerBackdrop');
+  if (!drawer || !backdrop) return;
+  drawer.classList.remove('open');
+  drawer.setAttribute('aria-hidden', 'true');
+  backdrop.hidden = true;
+  $('#mobileMenuButton')?.setAttribute('aria-expanded', 'false');
+}
+
 function showStudyPage(page = 'dashboard') {
   const view = $('#studyView');
   if (!view) return;
@@ -1221,6 +1265,18 @@ $('#micButton').addEventListener('click', startVoice);
 $('#stopVoice').addEventListener('click', () => state.recognition?.stop());
 $('#settingsOpen').addEventListener('click', openSettings);
 $('#settingsTop').addEventListener('click', openSettings);
+$('#mobileMenuButton')?.addEventListener('click', () => {
+  const open = $('#mobileDrawer')?.classList.contains('open');
+  if (open) closeMobileDrawer(); else openMobileDrawer();
+});
+$('#mobileDrawerClose')?.addEventListener('click', closeMobileDrawer);
+$('#mobileDrawerBackdrop')?.addEventListener('click', closeMobileDrawer);
+$('#mobileDrawerNewChat')?.addEventListener('click', () => { closeMobileDrawer(); $('#newChat').click(); });
+$('#mobileDrawerChat')?.addEventListener('click', () => { closeMobileDrawer(); showChatView(); $('#messageInput').focus(); });
+$('#mobileDrawerStudy')?.addEventListener('click', () => { closeMobileDrawer(); openStudyWorkspace(); });
+$('#mobileDrawerProjects')?.addEventListener('click', () => { closeMobileDrawer(); $('#projectsLink').click(); });
+$('#mobileDrawerSettings')?.addEventListener('click', () => { closeMobileDrawer(); openSettings(); });
+$('#mobileDrawerAccount')?.addEventListener('click', () => toast('La cuenta de Jarvis se guarda localmente en este dispositivo.'));
 $('#providerLine').addEventListener('click', openSettings);
 $('#providerSelect').addEventListener('change', updateSettingsDetails);
 $('#saveSettings').addEventListener('click', saveSettings);
@@ -1234,6 +1290,7 @@ $('#newChat').addEventListener('click', () => {
   state.messages = [];
   state.attachments = [];
   renderAttachmentTray();
+  renderMobileChats();
   saveHistory();
   $('#conversation').replaceChildren();
   $('#pendingArea').replaceChildren();
@@ -1249,5 +1306,6 @@ $('#projectsLink').addEventListener('click', async () => {
 $$('.prompt-card').forEach(button => button.addEventListener('click', () => sendCurrent(button.dataset.prompt)));
 
 visibleHistory();
+renderMobileChats();
 refreshStatus();
 setVoiceCapability();
