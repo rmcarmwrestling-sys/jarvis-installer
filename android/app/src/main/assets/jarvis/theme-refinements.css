@@ -157,3 +157,19 @@ body.study-active .study-exam-view:not([hidden]),body.study-active .study-result
 .study-builder-page .study-secondary-button{width:100%;margin-top:10px;border-color:#ddd4f5;color:#6e7b92;background:#fff;font-size:9px}
 @media(max-width:900px){.study-builder-layout{grid-template-columns:1fr}.study-builder-page .study-builder{max-width:none}.study-builder-page .study-history-panel{min-height:0}}
 @media(max-width:560px){.study-builder-page .study-builder,.study-builder-page .study-history-panel{padding:14px}.study-type-selector,.study-difficulty-selector{gap:5px}.study-type-choice,.study-difficulty-selector button{font-size:8px}.study-time-field{max-width:none}}
+
+/* Vista móvil principal: fondo uniforme y controles con elevación ligera. */
+body:not(.study-active){background:#070b12!important}
+body:not(.study-active)::before{display:none!important}
+body:not(.study-active)>.app-shell,
+body:not(.study-active)>.app-shell::before,
+body:not(.study-active)>.app-shell>.main-panel,
+body:not(.study-active)>.app-shell>.main-panel>.topbar,
+body:not(.study-active)>.app-shell>.main-panel>.chat-stage{background:#070b12!important;background-image:none!important}
+body:not(.study-active)>.app-shell>.main-panel>.topbar{box-shadow:none!important}
+body:not(.study-active)>.app-shell::before{display:none!important}
+body:not(.study-active) .welcome::before{display:none!important}
+body:not(.study-active) .prompt-card{background:#0d1a28!important;border-color:rgba(91,178,215,.42)!important;box-shadow:0 12px 26px rgba(0,0,0,.34),0 0 0 1px rgba(92,211,239,.05),inset 0 1px rgba(185,241,255,.06)!important;transform:translateY(-1px)}
+body:not(.study-active) .prompt-card:hover{background:#10263a!important;box-shadow:0 17px 32px rgba(0,0,0,.42),0 0 20px rgba(52,201,227,.12),inset 0 1px rgba(185,241,255,.1)!important;transform:translateY(-3px)}
+body:not(.study-active) .mobile-menu-button,
+body:not(.study-active) .connection-pill{box-shadow:0 8px 20px rgba(0,0,0,.28),0 0 0 1px rgba(91,211,238,.04)}
