@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.net.Uri;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.os.Vibrator;
 import android.os.VibrationEffect;
@@ -38,6 +39,7 @@ public class MainActivity extends Activity {
     private int currentTopInset;
     private int currentBottomInset;
     private int currentImeInset;
+    private volatile boolean photoPickerRequested;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -129,11 +131,23 @@ public class MainActivity extends Activity {
             public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
                 if (pendingFileCallback != null) pendingFileCallback.onReceiveValue(null);
                 pendingFileCallback = filePathCallback;
-                Intent chooser = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-                chooser.addCategory(Intent.CATEGORY_OPENABLE);
-                chooser.setType("*/*");
-                chooser.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
-                chooser.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                boolean usePhotoPicker = photoPickerRequested;
+                photoPickerRequested = false;
+                Intent chooser;
+                if (usePhotoPicker) {
+                    // ACTION_PICK lets Android hand the request to the
+                    // installed photo provider (Google Fotos on devices that
+                    // use it), instead of opening the generic file browser.
+                    chooser = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                    chooser.setType("image/*");
+                    chooser.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                } else {
+                    chooser = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    chooser.addCategory(Intent.CATEGORY_OPENABLE);
+                    chooser.setType("*/*");
+                    chooser.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
+                    chooser.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                }
                 try {
                     startActivityForResult(chooser, FILE_CHOOSER_REQUEST);
                 } catch (Exception error) {
@@ -267,6 +281,11 @@ public class MainActivity extends Activity {
      * the Android device that currently runs the app; it never controls Windows.
      */
     private final class JarvisBridge {
+        @JavascriptInterface
+        public void preparePhotoPicker() {
+            photoPickerRequested = true;
+        }
+
         @JavascriptInterface
         public String performAction(String action, String json) {
             if (Looper.myLooper() != Looper.getMainLooper()) {

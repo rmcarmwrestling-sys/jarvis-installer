@@ -1277,6 +1277,9 @@ $$('[data-attachment-action]').forEach(button => button.addEventListener('click'
     } catch (error) { toast(error.message); }
     return;
   }
+  if (action === 'photos' && window.JarvisAndroid?.preparePhotoPicker) {
+    window.JarvisAndroid.preparePhotoPicker();
+  }
   $('#fileInput')?.click();
 }));
 document.addEventListener('click', event => {
