@@ -11,7 +11,8 @@ const MOBILE_SYSTEM_PROMPT = `Te llamas Jarvis. Responde en español salvo que t
 
 function readMobileConfig() {
   try {
-    const value = JSON.parse(localStorage.getItem(MOBILE_CONFIG_KEY) || '{}');
+    const stored = localStorage.getItem(MOBILE_CONFIG_KEY) || localStorage.getItem('jarvis.android.config.v1') || '{}';
+    const value = JSON.parse(stored);
     return { provider: 'openrouter', model: String(value.model || 'openrouter/free'), apiKey: String(value.apiKey || '') };
   } catch { return { provider: 'openrouter', model: 'openrouter/free', apiKey: '' }; }
 }
@@ -1200,11 +1201,14 @@ $('#studyClearHistory').addEventListener('click', () => { if (!state.studyHistor
 
 $$('[data-study-page]').forEach(button => button.addEventListener('click', () => navigateStudyPage(button.dataset.studyPage)));
 
-$('#studyLink').addEventListener('click', () => {
+function openStudyWorkspace() {
   state.studyExam = state.activeView === 'study' ? state.studyExam : null;
   setStudyScene('builder');
   showStudyPage('dashboard');
-});
+}
+
+$('#studyLink').addEventListener('click', openStudyWorkspace);
+$('#studyTop')?.addEventListener('click', openStudyWorkspace);
 
 $('#composerForm').addEventListener('submit', event => { event.preventDefault(); sendCurrent(); });
 $('#attachButton')?.addEventListener('click', () => $('#fileInput')?.click());

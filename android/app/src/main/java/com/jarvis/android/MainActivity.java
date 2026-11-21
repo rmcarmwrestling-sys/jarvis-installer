@@ -13,8 +13,12 @@ import android.os.VibrationEffect;
 import android.os.Looper;
 import android.os.Build;
 import android.os.Bundle;
+import android.graphics.Color;
+import android.view.View;
+import android.view.WindowInsets;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
@@ -26,14 +30,39 @@ import java.util.concurrent.CountDownLatch;
 
 public class MainActivity extends Activity {
     private static final String JARVIS_URL = "https://appassets.androidplatform.net/assets/jarvis/index.html";
+    private static final int FILE_CHOOSER_REQUEST = 42;
     private WebView webView;
     private PermissionRequest pendingPermissionRequest;
+    private ValueCallback<Uri[]> pendingFileCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         webView = new WebView(this);
         setContentView(webView);
+
+        getWindow().setStatusBarColor(Color.rgb(7, 18, 29));
+        getWindow().setNavigationBarColor(Color.rgb(7, 18, 29));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            getWindow().setDecorFitsSystemWindows(true);
+        } else {
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        }
+        webView.setFitsSystemWindows(true);
+        webView.setOnApplyWindowInsetsListener((view, insets) -> {
+            int top = 0;
+            int bottom = 0;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+                top = bars.top;
+                bottom = bars.bottom;
+            } else {
+                top = insets.getSystemWindowInsetTop();
+                bottom = insets.getSystemWindowInsetBottom();
+            }
+            view.setPadding(0, top, 0, bottom);
+            return insets;
+        });
 
         webView.setBackgroundColor(0xFF07121D);
         webView.getSettings().setJavaScriptEnabled(true);
@@ -63,6 +92,25 @@ public class MainActivity extends Activity {
         });
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
+            public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+                if (pendingFileCallback != null) pendingFileCallback.onReceiveValue(null);
+                pendingFileCallback = filePathCallback;
+                Intent chooser = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                chooser.addCategory(Intent.CATEGORY_OPENABLE);
+                chooser.setType("*/*");
+                chooser.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
+                chooser.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                try {
+                    startActivityForResult(chooser, FILE_CHOOSER_REQUEST);
+                } catch (Exception error) {
+                    pendingFileCallback = null;
+                    filePathCallback.onReceiveValue(null);
+                    return false;
+                }
+                return true;
+            }
+
+            @Override
             public void onPermissionRequest(final PermissionRequest request) {
                 runOnUiThread(() -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
@@ -82,6 +130,25 @@ public class MainActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 41);
         }
         webView.loadUrl(JARVIS_URL);
+        webView.requestApplyInsets();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != FILE_CHOOSER_REQUEST || pendingFileCallback == null) return;
+        Uri[] results = null;
+        if (resultCode == RESULT_OK && data != null) {
+            if (data.getClipData() != null) {
+                int count = data.getClipData().getItemCount();
+                results = new Uri[count];
+                for (int index = 0; index < count; index++) results[index] = data.getClipData().getItemAt(index).getUri();
+            } else if (data.getData() != null) {
+                results = new Uri[]{data.getData()};
+            }
+        }
+        pendingFileCallback.onReceiveValue(results);
+        pendingFileCallback = null;
     }
 
     @Override
@@ -109,6 +176,10 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (pendingFileCallback != null) {
+            pendingFileCallback.onReceiveValue(null);
+            pendingFileCallback = null;
+        }
         if (webView != null) {
             webView.destroy();
         }
