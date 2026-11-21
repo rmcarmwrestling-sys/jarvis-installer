@@ -30,6 +30,7 @@ const mobileTools = [
   { type: 'function', function: { name: 'open_camera', description: 'Abrir la cámara del dispositivo.', parameters: { type: 'object', properties: {}, additionalProperties: false } } },
   { type: 'function', function: { name: 'open_gallery', description: 'Abrir el selector de imágenes y vídeos del dispositivo.', parameters: { type: 'object', properties: {}, additionalProperties: false } } },
   { type: 'function', function: { name: 'vibrate', description: 'Hacer vibrar el dispositivo durante unos milisegundos.', parameters: { type: 'object', properties: { milliseconds: { type: 'integer', minimum: 50, maximum: 2000 } }, additionalProperties: false } } },
+  { type: 'function', function: { name: 'generate_image', description: 'Crear una imagen desde una descripción y devolverla para verla en Jarvis.', parameters: { type: 'object', properties: { prompt: { type: 'string' }, width: { type: 'integer', minimum: 256, maximum: 1536 }, height: { type: 'integer', minimum: 256, maximum: 1536 } }, required: ['prompt'], additionalProperties: false } } },
 ];
 
 function loadStudyHistory() {
@@ -533,7 +534,7 @@ async function handleTool(call) {
   if (['generate_image', 'generate_video', 'generate_3d'].includes(call.function.name) && result?.result?.url) {
     const media = result.result;
     const mediaUrl = String(media.url);
-    if (/^https?:\/\/127\.0\.0\.1:3210\/media\//.test(mediaUrl)) {
+    if (/^(?:https?:\/\/127\.0\.0\.1:3210\/media\/|https?:\/\/image\.pollinations\.ai\/)/.test(mediaUrl)) {
       if (call.function.name === 'generate_image') {
         const image = document.createElement('img');
         image.alt = 'Imagen creada por Jarvis';

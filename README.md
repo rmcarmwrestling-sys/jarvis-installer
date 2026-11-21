@@ -16,7 +16,7 @@ El instalador ya incluye el runtime de escritorio, por lo que no necesita Node.j
 
 El botón «Abrir e instalar Jarvis» descarga el APK nativo oficial:
 
-`https://github.com/rmcarmwrestling-sys/jarvis-installer/releases/download/v1.4.1/app-release.apk`
+`https://github.com/rmcarmwrestling-sys/jarvis-installer/releases/download/v1.4.2/app-release.apk`
 
 Después de la descarga, abre el APK y confirma «Instalar». Android puede pedir que permitas temporalmente la instalación desde el navegador. La aplicación incluye una copia local de la interfaz real de Jarvis, así que puede abrirse aunque GitHub Pages esté temporalmente inaccesible; el chat necesita conexión a internet. Guarda su configuración en el móvil y solicita permiso de micrófono solo cuando es necesario.
 
