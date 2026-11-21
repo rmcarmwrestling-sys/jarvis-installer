@@ -166,14 +166,14 @@ public class MainActivity extends Activity {
         return id == 0 ? 0 : getResources().getDimensionPixelSize(id);
     }
 
-    private void applyPageInsets(WebView view, int top, int bottom) {
-        if (view == null) return;
+    private void applyPageInsets(View view, int top, int bottom) {
+        if (!(view instanceof WebView)) return;
         String script = "document.documentElement.style.setProperty('--jarvis-status-top','"
                 + Math.max(0, top)
                 + "px');document.documentElement.style.setProperty('--jarvis-nav-bottom','"
                 + Math.max(0, bottom)
                 + "px');";
-        view.evaluateJavascript(script, null);
+        ((WebView) view).evaluateJavascript(script, null);
     }
 
     @Override
