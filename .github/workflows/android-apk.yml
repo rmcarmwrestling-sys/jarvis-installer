@@ -56,8 +56,8 @@ jobs:
         if: failure()
         shell: bash
         run: |
-          grep -Ei '(^e:|error:|what went wrong|execution failed|failed with an exception|> Task)' android-build.log | tail -n 80 | while IFS= read -r line; do
-            echo "::error::$line"
+          tail -n 180 android-build.log | while IFS= read -r line; do
+            [ -n "$line" ] && echo "::error title=Gradle::$line"
           done
 
       - name: Guardar APK como artefacto
@@ -70,8 +70,8 @@ jobs:
       - name: Publicar APK en GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.8.3
-          name: Jarvis Android v1.8.3
+          tag_name: v1.8.4
+          name: Jarvis Android v1.8.4
           body: |-
             Aplicación Android nativa de Jarvis.
 
