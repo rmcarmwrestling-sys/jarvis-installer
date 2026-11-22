@@ -127,6 +127,47 @@ function setAuthMessage(message = '', success = false) {
   node.classList.toggle('success', success);
 }
 
+function showGoogleChooser() {
+  const choices = $('#authChoices');
+  const form = $('#authForm');
+  const chooser = $('#authGoogleChooser');
+  const list = $('#authGoogleAccounts');
+  if (!choices || !form || !chooser || !list) return;
+  choices.hidden = true;
+  form.hidden = true;
+  chooser.hidden = false;
+  list.replaceChildren();
+  const accounts = readAuthAccounts().filter(account => account.provider === 'google' || !account.passwordHash);
+  if (!accounts.length) {
+    const empty = document.createElement('div');
+    empty.className = 'auth-account-empty';
+    empty.textContent = 'Todavía no hay cuentas Google guardadas en Jarvis. Pulsa «Añadir otra cuenta» para continuar.';
+    list.append(empty);
+  } else {
+    accounts.forEach(account => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'auth-account-row';
+      const avatar = document.createElement('span');
+      avatar.className = 'auth-account-avatar';
+      const name = String(account.name || account.email.split('@')[0] || 'J').trim();
+      avatar.textContent = name.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+      const copy = document.createElement('span');
+      copy.className = 'auth-account-copy';
+      const nameNode = document.createElement('strong');
+      nameNode.className = 'auth-account-name';
+      nameNode.textContent = name;
+      const emailNode = document.createElement('small');
+      emailNode.className = 'auth-account-email';
+      emailNode.textContent = account.email;
+      copy.append(nameNode, emailNode);
+      row.append(avatar, copy);
+      row.addEventListener('click', () => finishAuthentication(account));
+      list.append(row);
+    });
+  }
+}
+
 function showAuthForm(mode = 'login') {
   authMode = mode;
   const choices = $('#authChoices');
@@ -140,6 +181,7 @@ function showAuthForm(mode = 'login') {
   if (!choices || !form) return;
   choices.hidden = true;
   form.hidden = false;
+  $('#authGoogleChooser').hidden = true;
   nameField.hidden = mode === 'login' || mode === 'google';
   passwordField.hidden = mode === 'google';
   $('#authPassword').required = mode !== 'google';
@@ -168,6 +210,7 @@ function showAuthForm(mode = 'login') {
 function showAuthChoices() {
   $('#authChoices').hidden = false;
   $('#authForm').hidden = true;
+  $('#authGoogleChooser').hidden = true;
   setAuthMessage();
 }
 
@@ -233,9 +276,11 @@ function initializeAuthentication() {
     screen.hidden = false;
     document.body.classList.add('auth-required');
   }
-  $('#authGoogle')?.addEventListener('click', () => showAuthForm('google'));
+  $('#authGoogle')?.addEventListener('click', showGoogleChooser);
   $('#authOther')?.addEventListener('click', () => showAuthForm(readAuthAccounts().length ? 'login' : 'register'));
   $('#authBack')?.addEventListener('click', showAuthChoices);
+  $('#authChooserBack')?.addEventListener('click', showAuthChoices);
+  $('#authGoogleAdd')?.addEventListener('click', () => showAuthForm('google'));
   $('#authSwitch')?.addEventListener('click', () => showAuthForm(authMode === 'login' ? 'register' : 'login'));
   $('#authForm')?.addEventListener('submit', submitAuthentication);
 }

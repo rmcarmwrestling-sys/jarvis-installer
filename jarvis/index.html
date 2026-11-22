@@ -21,6 +21,14 @@
         <button class="auth-choice auth-google" id="authGoogle" type="button"><span class="auth-google-mark">G</span><span>Continuar con Google</span></button>
         <button class="auth-choice auth-other" id="authOther" type="button">Iniciar sesión de otra forma</button>
       </div>
+      <section class="auth-google-chooser" id="authGoogleChooser" hidden aria-labelledby="authChooserTitle">
+        <button class="auth-back" id="authChooserBack" type="button">← Volver</button>
+        <div class="auth-chooser-mark" aria-hidden="true"><span>J</span></div>
+        <h2 id="authChooserTitle">Selecciona una cuenta</h2>
+        <p>para utilizar Jarvis</p>
+        <div class="auth-account-list" id="authGoogleAccounts"></div>
+        <button class="auth-add-account" id="authGoogleAdd" type="button"><span>♙</span> Añadir otra cuenta</button>
+      </section>
       <form class="auth-form" id="authForm" hidden>
         <button class="auth-back" id="authBack" type="button">← Volver</button>
         <h2 id="authFormTitle">Crear tu cuenta</h2>

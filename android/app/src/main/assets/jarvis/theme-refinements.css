@@ -208,7 +208,7 @@ body:not(.study-active) .connection-pill{box-shadow:0 8px 20px rgba(0,0,0,.28),0
   body:not(.study-active) .mobile-drawer-head{border-bottom:0;padding-bottom:0}
 }
 
-/* Acceso inicial de Jarvis: aspecto limpio y claro, como la referencia. */
+/* Acceso inicial de Jarvis: estructura de autenticación reutilizable. */
 .auth-screen{
   position:fixed;
   inset:0;
@@ -256,6 +256,49 @@ body.auth-required{overflow:hidden}
   .auth-subtitle{margin-bottom:31px}
   .auth-choice{height:56px;font-size:14px}
 }
+
+/* El acceso conserva la identidad visual futurista de Jarvis. */
+.auth-screen{
+  background:
+    radial-gradient(circle at 50% 29%,rgba(51,185,218,.17),transparent 23%),
+    linear-gradient(145deg,#07131d 0%,#08101a 52%,#060b12 100%);
+  color:#e5f8fc;
+}
+.auth-screen:before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.26;background-image:linear-gradient(rgba(74,175,204,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(74,175,204,.08) 1px,transparent 1px);background-size:58px 58px;mask-image:linear-gradient(to bottom,transparent,#000 16%,#000 82%,transparent)}
+.auth-content{position:relative;z-index:1}
+.auth-brand-mark{width:92px;height:92px;border:1px solid rgba(109,224,244,.72);background:radial-gradient(circle at 35% 28%,#c6ffff 0,#59d9ea 18%,#137997 47%,#17205d 74%,#07121d 100%);box-shadow:0 0 22px rgba(69,216,238,.48),inset 0 0 20px rgba(161,246,255,.25);margin-bottom:22px}
+.auth-brand-mark:before,.auth-brand-mark:after{border-color:rgba(105,225,241,.62);border-width:1px;box-shadow:0 0 14px rgba(57,198,222,.22)}
+.auth-brand-mark:before{inset:-11px 4px;transform:rotate(35deg) scaleY(.64)}
+.auth-brand-mark:after{inset:-11px 4px;transform:rotate(-35deg) scaleY(.64)}
+.auth-brand-mark span{font-size:0;width:35px;height:35px;border-radius:50%;background:radial-gradient(circle at 35% 27%,#efffff 0,#81f1fa 23%,#36a9cb 55%,#132967 100%);box-shadow:0 0 17px rgba(131,243,255,.8);}
+.auth-content h1{color:#edfbff;font-size:35px;letter-spacing:3px;text-shadow:0 0 17px rgba(99,222,244,.26)}
+.auth-subtitle{color:#8eabb8;font:500 10px 'DM Mono',monospace;letter-spacing:2px;text-transform:uppercase}
+.auth-choice{border-color:rgba(90,197,222,.38);background:rgba(10,28,42,.78);color:#e4f8fb;box-shadow:0 12px 28px rgba(0,0,0,.27),inset 0 1px rgba(172,244,255,.08);backdrop-filter:blur(14px)}
+.auth-choice:hover,.auth-choice:focus-visible{border-color:#72e1f1;background:rgba(17,52,70,.88);box-shadow:0 14px 34px rgba(0,0,0,.36),0 0 22px rgba(67,207,235,.17);transform:translateY(-2px)}
+.auth-google-mark{color:#8cefff;text-shadow:0 0 11px rgba(108,229,255,.65)}
+.auth-back{color:#76cfe1}.auth-back:hover{color:#c8faff}
+.auth-form h2,.auth-google-chooser h2{color:#edfaff;text-shadow:0 0 14px rgba(90,212,238,.2)}
+.auth-form p,.auth-google-chooser>p{color:#88a5b2}
+.auth-form label{color:#b9d6df}
+.auth-form input{border-color:rgba(91,181,207,.35);background:rgba(8,20,31,.84);color:#e5f8fc;box-shadow:inset 0 1px rgba(181,246,255,.05)}
+.auth-form input:focus{border-color:#71ddec;box-shadow:0 0 0 3px rgba(72,207,231,.12),0 0 15px rgba(72,207,231,.1)}
+.auth-submit{background:linear-gradient(100deg,#63d9e9,#9bdbf5);color:#072130;box-shadow:0 9px 24px rgba(45,179,212,.25)}
+.auth-submit:hover{background:linear-gradient(100deg,#8bf0fa,#bceaff)}
+.auth-switch{color:#8fe2ee}.auth-switch:hover{color:#d2fbff}
+.auth-message{color:#f0a7a2}.auth-message.success{color:#8fe2c7}
+.auth-privacy{color:#688392}
+.auth-google-chooser{width:min(100%,390px);text-align:center;margin-top:auto;padding:24px 19px 19px;border:1px solid rgba(83,183,211,.34);border-radius:22px;background:rgba(7,21,32,.86);box-shadow:0 22px 54px rgba(0,0,0,.42),inset 0 1px rgba(177,244,255,.08);backdrop-filter:blur(18px)}
+.auth-google-chooser[hidden]{display:none}
+.auth-chooser-mark{width:52px;height:52px;display:grid;place-items:center;margin:0 auto 13px;border:1px solid rgba(108,224,244,.62);border-radius:50%;background:radial-gradient(circle at 35% 28%,#d9ffff 0,#55d7e9 25%,#1c7295 60%,#14235b 100%);box-shadow:0 0 17px rgba(65,210,235,.4)}
+.auth-chooser-mark span{font:700 17px Manrope,sans-serif;color:#ebffff;text-shadow:0 0 8px #54e5f5}
+.auth-google-chooser h2{margin:0;font-size:23px;letter-spacing:-.4px}.auth-google-chooser>p{margin:6px 0 16px;font-size:13px}
+.auth-account-list{display:grid;gap:5px;text-align:left;max-height:43vh;overflow:auto;padding:2px 0 4px}
+.auth-account-row{width:100%;display:flex;align-items:center;gap:12px;padding:10px 11px;border:1px solid transparent;border-radius:13px;background:transparent;color:#e5f8fc;text-align:left;cursor:pointer}
+.auth-account-row:hover,.auth-account-row:focus-visible{border-color:rgba(94,212,235,.4);background:rgba(33,87,105,.26);outline:none}
+.auth-account-avatar{width:38px;height:38px;display:grid;place-items:center;flex:0 0 38px;border-radius:50%;background:linear-gradient(145deg,#4bd4dd,#274b86);color:#ecffff;font:700 16px Manrope,sans-serif;box-shadow:0 0 12px rgba(66,204,225,.22)}
+.auth-account-copy{min-width:0}.auth-account-name,.auth-account-email{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.auth-account-name{font-size:12px;font-weight:700}.auth-account-email{margin-top:3px;color:#82a6b4;font-size:10px}
+.auth-account-empty{padding:16px 9px;color:#7e9ca8;font-size:11px;line-height:1.5;text-align:center;border:1px dashed rgba(88,175,200,.28);border-radius:12px}
+.auth-add-account{width:100%;height:43px;margin-top:8px;border:1px solid rgba(95,207,228,.35);border-radius:13px;background:rgba(14,42,56,.68);color:#b8f4fa;font-size:12px;font-weight:650;cursor:pointer}.auth-add-account:hover{background:rgba(30,83,101,.72);border-color:#70deed}.auth-add-account span{margin-right:7px;color:#8be8f3;font-size:17px;vertical-align:-1px}
 
 /* Menú de fuentes de adjuntos que aparece al pulsar «+». */
 .composer{position:relative}
