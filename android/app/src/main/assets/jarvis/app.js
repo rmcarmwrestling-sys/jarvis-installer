@@ -179,17 +179,6 @@ function requestGoogleAccount() {
   showGoogleChooser();
 }
 
-function requestGoogleAddAccount() {
-  if (window.JarvisAndroid?.addGoogleAccount) {
-    setAuthMessage('Abriendo el inicio de sesión de Google…');
-    try {
-      window.JarvisAndroid.addGoogleAccount();
-      return;
-    } catch { /* Fall back to the local account form outside Android. */ }
-  }
-  showAuthForm('google');
-}
-
 window.onGoogleAccountSelected = email => {
   const normalizedEmail = String(email || '').trim().toLowerCase();
   if (!normalizedEmail) return;
@@ -202,7 +191,6 @@ window.onGoogleAccountSelected = email => {
 };
 
 window.onGoogleAccountChooserError = message => {
-  if ($('#authGoogleChooser')?.hidden) showAuthForm('google');
   setAuthMessage(String(message || 'No se pudo abrir el selector de cuentas.'));
 };
 
@@ -318,7 +306,7 @@ function initializeAuthentication() {
   $('#authOther')?.addEventListener('click', () => showAuthForm(readAuthAccounts().length ? 'login' : 'register'));
   $('#authBack')?.addEventListener('click', showAuthChoices);
   $('#authChooserBack')?.addEventListener('click', showAuthChoices);
-  $('#authGoogleAdd')?.addEventListener('click', requestGoogleAddAccount);
+  $('#authGoogleAdd')?.addEventListener('click', () => showAuthForm('google'));
   $('#authSwitch')?.addEventListener('click', () => showAuthForm(authMode === 'login' ? 'register' : 'login'));
   $('#authForm')?.addEventListener('submit', submitAuthentication);
 }
