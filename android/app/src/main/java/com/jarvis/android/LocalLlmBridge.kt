@@ -83,7 +83,11 @@ class LocalLlmBridge(
     fun close() {
         executor.execute {
             loadedModel?.let { model ->
-                try { Llama.releaseModel(model) } catch (_: Exception) { }
+                try {
+                    runBlocking(Dispatchers.Default) {
+                        Llama.releaseModel(model)
+                    }
+                } catch (_: Exception) { }
             }
             loadedModel = null
             executor.shutdown()
