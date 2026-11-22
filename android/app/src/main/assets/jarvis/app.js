@@ -168,6 +168,32 @@ function showGoogleChooser() {
   }
 }
 
+function requestGoogleAccount() {
+  if (window.JarvisAndroid?.chooseGoogleAccount) {
+    setAuthMessage('Selecciona una cuenta Google del dispositivo…');
+    try {
+      window.JarvisAndroid.chooseGoogleAccount();
+      return;
+    } catch { /* Fall back to the local chooser if the bridge is unavailable. */ }
+  }
+  showGoogleChooser();
+}
+
+window.onGoogleAccountSelected = email => {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!normalizedEmail) return;
+  const accounts = readAuthAccounts();
+  const existing = accounts.find(account => String(account.email).toLowerCase() === normalizedEmail);
+  if (existing) { finishAuthentication(existing); return; }
+  const account = { id: (window.crypto?.randomUUID?.() || `account-${Date.now()}`), name: normalizedEmail.split('@')[0], email: normalizedEmail, provider: 'google', createdAt: new Date().toISOString() };
+  try { writeAuthAccounts([account, ...accounts]); finishAuthentication(account); }
+  catch (error) { setAuthMessage(error.message || 'No se pudo guardar la cuenta seleccionada.'); }
+};
+
+window.onGoogleAccountChooserError = message => {
+  setAuthMessage(String(message || 'No se pudo abrir el selector de cuentas.'));
+};
+
 function showAuthForm(mode = 'login') {
   authMode = mode;
   const choices = $('#authChoices');
@@ -276,7 +302,7 @@ function initializeAuthentication() {
     screen.hidden = false;
     document.body.classList.add('auth-required');
   }
-  $('#authGoogle')?.addEventListener('click', showGoogleChooser);
+  $('#authGoogle')?.addEventListener('click', requestGoogleAccount);
   $('#authOther')?.addEventListener('click', () => showAuthForm(readAuthAccounts().length ? 'login' : 'register'));
   $('#authBack')?.addEventListener('click', showAuthChoices);
   $('#authChooserBack')?.addEventListener('click', showAuthChoices);

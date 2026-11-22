@@ -48,13 +48,13 @@ jobs:
       - name: Publicar APK en GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.6.9
-          name: Jarvis Android v1.6.9
+          tag_name: v1.7.0
+          name: Jarvis Android v1.7.0
           body: |-
             Aplicación Android nativa de Jarvis.
 
             Instálala en un teléfono Android y abre Jarvis directamente, sin pasar por la página de distribución.
-            Incluye Study completo, adjuntos de imágenes y vídeos, menú lateral móvil y barra segura bajo la barra de estado.
+            Incluye Study completo, adjuntos de imágenes y vídeos, selector nativo de cuentas Google, menú lateral móvil y barra segura bajo la barra de estado.
           files: android/app/build/outputs/apk/release/app-release.apk
           make_latest: true
         env:

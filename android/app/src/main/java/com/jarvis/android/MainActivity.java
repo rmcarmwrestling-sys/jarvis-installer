@@ -1,6 +1,8 @@
 package com.jarvis.android;
 
 import android.Manifest;
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -33,6 +35,7 @@ import java.util.concurrent.CountDownLatch;
 public class MainActivity extends Activity {
     private static final String JARVIS_URL = "https://appassets.androidplatform.net/assets/jarvis/index.html";
     private static final int FILE_CHOOSER_REQUEST = 42;
+    private static final int GOOGLE_ACCOUNT_REQUEST = 43;
     private WebView webView;
     private PermissionRequest pendingPermissionRequest;
     private ValueCallback<Uri[]> pendingFileCallback;
@@ -225,6 +228,16 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == GOOGLE_ACCOUNT_REQUEST) {
+            if (resultCode == RESULT_OK && data != null && webView != null) {
+                String accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
+                if (accountName != null && !accountName.trim().isEmpty()) {
+                    String quoted = JSONObject.quote(accountName.trim());
+                    webView.evaluateJavascript("window.onGoogleAccountSelected && window.onGoogleAccountSelected(" + quoted + ")", null);
+                }
+            }
+            return;
+        }
         if (requestCode != FILE_CHOOSER_REQUEST || pendingFileCallback == null) return;
         Uri[] results = null;
         if (resultCode == RESULT_OK && data != null) {
@@ -281,6 +294,29 @@ public class MainActivity extends Activity {
      * the Android device that currently runs the app; it never controls Windows.
      */
     private final class JarvisBridge {
+        @JavascriptInterface
+        public void chooseGoogleAccount() {
+            runOnUiThread(() -> {
+                try {
+                    Intent chooser = AccountManager.newChooseAccountIntent(
+                            (Account) null,
+                            (java.util.ArrayList<Account>) null,
+                            new String[]{"com.google"},
+                            "para utilizar Jarvis",
+                            null,
+                            null,
+                            null
+                    );
+                    startActivityForResult(chooser, GOOGLE_ACCOUNT_REQUEST);
+                } catch (Exception error) {
+                    if (webView != null) {
+                        String quoted = JSONObject.quote(error.getMessage() == null ? "No se pudo abrir el selector de cuentas." : error.getMessage());
+                        webView.evaluateJavascript("window.onGoogleAccountChooserError && window.onGoogleAccountChooserError(" + quoted + ")", null);
+                    }
+                }
+            });
+        }
+
         @JavascriptInterface
         public void preparePhotoPicker() {
             photoPickerRequested = true;
