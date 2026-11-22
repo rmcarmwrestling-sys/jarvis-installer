@@ -232,8 +232,7 @@ public class MainActivity extends Activity {
             if (resultCode == RESULT_OK && data != null && webView != null) {
                 String accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
                 if (accountName != null && !accountName.trim().isEmpty()) {
-                    String quoted = JSONObject.quote(accountName.trim());
-                    webView.evaluateJavascript("window.onGoogleAccountSelected && window.onGoogleAccountSelected(" + quoted + ")", null);
+                    dispatchGoogleAccountSelected(accountName.trim());
                 }
             }
             return;
@@ -251,6 +250,12 @@ public class MainActivity extends Activity {
         }
         pendingFileCallback.onReceiveValue(results);
         pendingFileCallback = null;
+    }
+
+    private void dispatchGoogleAccountSelected(String accountName) {
+        if (webView == null || accountName == null || accountName.trim().isEmpty()) return;
+        String quoted = JSONObject.quote(accountName.trim());
+        runOnUiThread(() -> webView.evaluateJavascript("window.onGoogleAccountSelected && window.onGoogleAccountSelected(" + quoted + ")", null));
     }
 
     @Override
@@ -315,6 +320,45 @@ public class MainActivity extends Activity {
                     }
                 }
             });
+        }
+
+        @JavascriptInterface
+        public void addGoogleAccount() {
+            runOnUiThread(() -> {
+                try {
+                    AccountManager.get(MainActivity.this).addAccount(
+                            "com.google",
+                            null,
+                            null,
+                            null,
+                            MainActivity.this,
+                            future -> {
+                                try {
+                                    Bundle result = future.getResult();
+                                    String accountName = result == null ? null : result.getString(AccountManager.KEY_ACCOUNT_NAME);
+                                    if (accountName != null && !accountName.trim().isEmpty()) dispatchGoogleAccountSelected(accountName.trim());
+                                } catch (Exception error) {
+                                    dispatchGoogleAccountError(error.getMessage());
+                                }
+                            },
+                            null
+                    );
+                } catch (Exception error) {
+                    try {
+                        Intent settings = new Intent(Settings.ACTION_ADD_ACCOUNT);
+                        settings.putExtra(Settings.EXTRA_ACCOUNT_TYPES, new String[]{"com.google"});
+                        startActivity(settings);
+                    } catch (Exception fallbackError) {
+                        dispatchGoogleAccountError(fallbackError.getMessage() == null ? error.getMessage() : fallbackError.getMessage());
+                    }
+                }
+            });
+        }
+
+        private void dispatchGoogleAccountError(String message) {
+            if (webView == null) return;
+            String quoted = JSONObject.quote(message == null ? "No se pudo añadir la cuenta Google." : message);
+            runOnUiThread(() -> webView.evaluateJavascript("window.onGoogleAccountChooserError && window.onGoogleAccountChooserError(" + quoted + ")", null));
         }
 
         @JavascriptInterface
