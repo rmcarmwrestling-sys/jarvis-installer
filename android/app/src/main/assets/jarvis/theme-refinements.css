@@ -203,9 +203,9 @@ body:not(.study-active) .connection-pill{box-shadow:0 8px 20px rgba(0,0,0,.28),0
   body:not(.study-active) #mobileDrawerClose,
   body:not(.study-active) #mobileDrawerChat,
   body:not(.study-active) #mobileDrawerProjects,
-  body:not(.study-active) .mobile-drawer-section,
   body:not(.study-active) .mobile-drawer-account{display:none!important}
   body:not(.study-active) .mobile-drawer-head{border-bottom:0;padding-bottom:0}
+  body:not(.study-active) .mobile-drawer-section{margin-top:10px}
 }
 
 /* Acceso inicial de Jarvis: estructura de autenticación reutilizable. */

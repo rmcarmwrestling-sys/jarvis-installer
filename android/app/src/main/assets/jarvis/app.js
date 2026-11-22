@@ -6,6 +6,8 @@ const STUDY_HISTORY_KEY = 'jarvis.study.history.v1';
 const AUTH_ACCOUNTS_KEY = 'jarvis.accounts.v1';
 const AUTH_SESSION_KEY = 'jarvis.session.v1';
 const ACCOUNT_HISTORY_PREFIX = 'jarvis.chat.account.v1';
+const CONVERSATIONS_KEY = 'jarvis.conversations.v1';
+const ACCOUNT_CONVERSATIONS_PREFIX = 'jarvis.conversations.account.v1';
 const ACCOUNT_STUDY_PREFIX = 'jarvis.study.history.account.v1';
 const MOBILE_CONFIG_KEY = 'jarvis.android.config.v2';
 const OPENROUTER_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
@@ -74,6 +76,54 @@ function loadChatHistory(account = null) {
   } catch { return []; }
 }
 
+function normalizeStoredMessages(messages) {
+  return Array.isArray(messages) ? messages.filter(item => item && ['user', 'assistant', 'tool'].includes(item.role)) : [];
+}
+
+function summarizeConversationTitle(messages) {
+  const firstUser = normalizeStoredMessages(messages).find(message => message.role === 'user' && (readable(message.content).trim() || message.attachments?.length));
+  let source = firstUser ? readable(firstUser.content).replace(/\s+/g, ' ').trim() : '';
+  if (!source && firstUser?.attachments?.length) source = firstUser.attachments[0].name || 'Archivo adjunto';
+  if (!source) return 'Nuevo chat';
+  source = source.replace(/^[¿¡\s]+|[?!.\s]+$/g, '').trim();
+  const words = source.split(' ').slice(0, 7).join(' ');
+  return `${words.slice(0, 46)}${words.length < source.length || source.length > 46 ? '…' : ''}`;
+}
+
+function createConversation(messages = [], id = '') {
+  const now = new Date().toISOString();
+  const normalized = normalizeStoredMessages(messages);
+  return {
+    id: id || (window.crypto?.randomUUID?.() || `conversation-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`),
+    title: summarizeConversationTitle(normalized),
+    messages: normalized,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function loadConversations(account = null) {
+  try {
+    const key = account ? accountStorageKey(ACCOUNT_CONVERSATIONS_PREFIX, account) : CONVERSATIONS_KEY;
+    const stored = JSON.parse(localStorage.getItem(key) || 'null');
+    if (Array.isArray(stored)) {
+      const conversations = stored.map((item, index) => {
+        const messages = normalizeStoredMessages(item?.messages);
+        const fallback = createConversation(messages, item?.id || `conversation-${index}`);
+        return {
+          ...fallback,
+          title: String(item?.title || fallback.title),
+          createdAt: String(item?.createdAt || fallback.createdAt),
+          updatedAt: String(item?.updatedAt || fallback.updatedAt),
+        };
+      });
+      if (conversations.length) return conversations;
+    }
+  } catch { /* Start with the legacy history below when storage is unavailable or malformed. */ }
+  const legacyMessages = loadChatHistory(account);
+  return [createConversation(legacyMessages)];
+}
+
 function loadStudyHistory(account = null) {
   try {
     const accountKey = account ? accountStorageKey(ACCOUNT_STUDY_PREFIX, account) : STUDY_HISTORY_KEY;
@@ -91,20 +141,44 @@ function loadAppOpeningPermission() {
 
 const initialAuthAccount = readInitialAuthAccount();
 
+const initialConversations = loadConversations(initialAuthAccount);
+const initialConversation = initialConversations[initialConversations.length - 1] || createConversation();
+
 const state = {
-  account: initialAuthAccount, authenticated: Boolean(initialAuthAccount), messages: loadChatHistory(initialAuthAccount), provider: 'openrouter', model: 'openrouter/free', hasKey: false,
+  account: initialAuthAccount, authenticated: Boolean(initialAuthAccount), conversations: initialConversations, activeConversationId: initialConversation.id, messages: initialConversation.messages.map(message => ({ ...message })), provider: 'openrouter', model: 'openrouter/free', hasKey: false,
   ollama: { available: false, models: [] }, appOpeningAuthorized: loadAppOpeningPermission(), busy: false, recognition: null, toastTimer: null,
   studyImages: [], studyExam: null, studyAnswers: {}, studyTimer: null, studyTimerEnds: 0, studyHistory: loadStudyHistory(initialAuthAccount), studyPage: 'dashboard', activeView: 'chat', attachments: [],
 };
 
-function saveHistory() {
-  const saved = state.messages.slice(-80).map(message => {
+function serializeMessages(messages) {
+  return messages.slice(-80).map(message => {
     const result = { ...message };
     if (Array.isArray(result.content)) result.content = result.content.map(part => part?.type === 'image_url' ? { type: 'text', text: '[Imagen adjunta; no se guarda el archivo en el historial local.]' } : part);
     if (Array.isArray(result.attachments)) result.attachments = result.attachments.map(item => ({ id: item.id, kind: item.kind, name: item.name, type: item.type, size: item.size, poster: item.poster }));
     return result;
   });
-  try { localStorage.setItem(state.account ? accountStorageKey(ACCOUNT_HISTORY_PREFIX, state.account) : HISTORY_KEY, JSON.stringify(saved)); } catch { /* Private browsing can disable storage. */ }
+}
+
+function syncActiveConversation() {
+  let active = state.conversations.find(conversation => conversation.id === state.activeConversationId);
+  if (!active) {
+    active = createConversation([], state.activeConversationId);
+    state.conversations.push(active);
+  }
+  active.messages = serializeMessages(state.messages);
+  const title = summarizeConversationTitle(state.messages);
+  if (title !== 'Nuevo chat') active.title = title;
+  active.updatedAt = new Date().toISOString();
+  state.conversations = state.conversations
+    .filter((conversation, index, all) => conversation && all.findIndex(item => item.id === conversation.id) === index);
+}
+
+function saveHistory() {
+  syncActiveConversation();
+  try {
+    const key = state.account ? accountStorageKey(ACCOUNT_CONVERSATIONS_PREFIX, state.account) : CONVERSATIONS_KEY;
+    localStorage.setItem(key, JSON.stringify(state.conversations));
+  } catch { /* Private browsing can disable storage. */ }
 }
 
 let authMode = 'login';
@@ -244,7 +318,10 @@ function finishAuthentication(account) {
   state.account = account;
   state.authenticated = true;
   try { localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ id: account.id, email: account.email })); } catch { /* The page remains usable for this session. */ }
-  state.messages = loadChatHistory(account);
+  state.conversations = loadConversations(account);
+  const activeConversation = state.conversations[state.conversations.length - 1] || createConversation();
+  state.activeConversationId = activeConversation.id;
+  state.messages = activeConversation.messages.map(message => ({ ...message }));
   state.studyHistory = loadStudyHistory(account);
   saveHistory();
   saveStudyHistory();
@@ -1084,22 +1161,43 @@ function renderMobileChats() {
   const list = $('#mobileChatList');
   if (!list) return;
   list.replaceChildren();
-  const prompts = state.messages.filter(message => message.role === 'user' && readable(message.content)).map(message => readable(message.content).trim()).filter(Boolean);
-  if (!prompts.length) {
+  const conversations = state.conversations.filter(conversation => conversation.messages.some(message => message.role === 'user' || (message.role === 'assistant' && readable(message.content))));
+  if (!conversations.length) {
     const empty = document.createElement('div');
     empty.className = 'mobile-chat-empty';
     empty.textContent = 'Todavía no hay conversaciones.';
     list.append(empty);
     return;
   }
-  prompts.slice(-8).reverse().forEach((prompt, index) => {
+  conversations.forEach(conversation => {
     const item = document.createElement('button');
     item.type = 'button';
-    item.className = `mobile-chat-item${index === 0 ? ' selected' : ''}`;
-    item.textContent = prompt.replace(/\s+/g, ' ').slice(0, 62);
-    item.addEventListener('click', () => { closeMobileDrawer(); showChatView(); $('#messageInput').focus(); });
+    item.className = `mobile-chat-item${conversation.id === state.activeConversationId ? ' selected' : ''}`;
+    item.textContent = conversation.title || 'Nuevo chat';
+    item.title = conversation.title || 'Nuevo chat';
+    item.addEventListener('click', () => selectConversation(conversation.id));
     list.append(item);
   });
+}
+
+function selectConversation(id) {
+  if (state.busy || id === state.activeConversationId) {
+    closeMobileDrawer();
+    return;
+  }
+  saveHistory();
+  const conversation = state.conversations.find(item => item.id === id);
+  if (!conversation) return;
+  state.activeConversationId = conversation.id;
+  state.messages = conversation.messages.map(message => ({ ...message }));
+  state.attachments.forEach(item => window.JarvisAttachments?.release(item));
+  state.attachments = [];
+  renderAttachmentTray();
+  visibleHistory();
+  renderMobileChats();
+  closeMobileDrawer();
+  showChatView();
+  $('#messageInput').focus();
 }
 
 function openMobileDrawer() {
@@ -1562,6 +1660,13 @@ $('#revokeAppOpeningPermission').addEventListener('click', revokeAppOpeningPermi
 $('#refreshRobloxBridge').addEventListener('click', refreshRobloxBridgeStatus);
 $('#newChat').addEventListener('click', () => {
   if (state.busy) return;
+  const hadMessages = state.messages.some(message => message.role === 'user' || (message.role === 'assistant' && readable(message.content)) || message.attachments?.length);
+  saveHistory();
+  if (hadMessages) {
+    const conversation = createConversation();
+    state.conversations.push(conversation);
+    state.activeConversationId = conversation.id;
+  }
   state.attachments.forEach(item => window.JarvisAttachments?.release(item));
   showChatView();
   state.messages = [];
