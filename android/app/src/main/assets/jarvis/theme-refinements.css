@@ -302,6 +302,7 @@ body.auth-required{overflow:hidden}
 
 /* Acceso rápido a Chat en la esquina inferior izquierda del menú móvil. */
 .mobile-drawer-chat-action{display:none}
+.mobile-drawer-divider{height:1px;margin:10px 12px 8px;background:linear-gradient(90deg,transparent,rgba(104,207,228,.46),transparent);box-shadow:0 0 8px rgba(74,202,226,.16)}
 @media(max-width:760px){
   body:not(.study-active) .mobile-drawer-chat-action{
     display:flex;
