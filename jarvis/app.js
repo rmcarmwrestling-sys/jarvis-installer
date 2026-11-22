@@ -11,9 +11,13 @@ const ACCOUNT_CONVERSATIONS_PREFIX = 'jarvis.conversations.account.v1';
 const ACCOUNT_STUDY_PREFIX = 'jarvis.study.history.account.v1';
 const MOBILE_CONFIG_KEY = 'jarvis.android.config.v2';
 const OPENROUTER_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
+// The legacy image route remains publicly callable. The current unified
+// Pollinations API requires a provider key, so video is generated locally
+// below to keep Jarvis usable without another account or quota.
+const POLLINATIONS_IMAGE_ENDPOINT = 'https://image.pollinations.ai/prompt/';
 const IS_ANDROID_APP = Boolean(window.JarvisAndroid) || location.hostname === 'appassets.androidplatform.net';
 
-const MOBILE_SYSTEM_PROMPT = `Te llamas Jarvis. Responde en español salvo que te pidan otro idioma. Estás instalado en el dispositivo de la persona y debes trabajar sobre ese dispositivo, no sobre Windows ni sobre otro ordenador. Puedes conversar, estudiar, crear proyectos y usar las herramientas Android disponibles: abrir aplicaciones instaladas, abrir enlaces, compartir texto, abrir ajustes, abrir la cámara o galería, consultar datos básicos del dispositivo y vibrar. Antes de una acción que cambie el dispositivo, explica qué vas a hacer y espera a que la persona pulse Permitir. No afirmes que una acción se realizó hasta recibir el resultado. Para Study devuelve los exámenes en el formato que solicite la aplicación. Para multimedia crea instrucciones y resultados compatibles con el móvil; no prometas cuotas ilimitadas de los proveedores externos.`;
+const MOBILE_SYSTEM_PROMPT = `Te llamas Jarvis. Responde en español salvo que te pidan otro idioma. Estás instalado en el dispositivo de la persona y debes trabajar sobre ese dispositivo, no sobre Windows ni sobre otro ordenador. Puedes conversar, estudiar, crear proyectos y usar las herramientas Android disponibles: abrir aplicaciones instaladas, abrir enlaces, compartir texto, abrir ajustes, abrir la cámara o galería, consultar datos básicos del dispositivo y vibrar. Antes de una acción que cambie el dispositivo, explica qué vas a hacer y espera a que la persona pulse Permitir. No afirmes que una acción se realizó hasta recibir el resultado. Para Study devuelve los exámenes en el formato que solicite la aplicación. Puedes crear imágenes y vídeos cortos con las herramientas multimedia; informa si el generador externo está ocupado o aplica límites y nunca prometas generación infinita.`;
 
 function readMobileConfig() {
   try {
@@ -38,6 +42,7 @@ const mobileTools = [
   { type: 'function', function: { name: 'open_gallery', description: 'Abrir el selector de imágenes y vídeos del dispositivo.', parameters: { type: 'object', properties: {}, additionalProperties: false } } },
   { type: 'function', function: { name: 'vibrate', description: 'Hacer vibrar el dispositivo durante unos milisegundos.', parameters: { type: 'object', properties: { milliseconds: { type: 'integer', minimum: 50, maximum: 2000 } }, additionalProperties: false } } },
   { type: 'function', function: { name: 'generate_image', description: 'Crear una imagen desde una descripción y devolverla para verla en Jarvis.', parameters: { type: 'object', properties: { prompt: { type: 'string' }, width: { type: 'integer', minimum: 256, maximum: 1536 }, height: { type: 'integer', minimum: 256, maximum: 1536 } }, required: ['prompt'], additionalProperties: false } } },
+  { type: 'function', function: { name: 'generate_video', description: 'Crear un vídeo corto animado localmente desde una descripción y devolverlo para verlo en Jarvis. No necesita otra API ni tiene cuota.', parameters: { type: 'object', properties: { prompt: { type: 'string' }, duration: { type: 'integer', minimum: 3, maximum: 8 } }, required: ['prompt'], additionalProperties: false } } },
 ];
 
 function readAuthAccounts() {
@@ -480,6 +485,104 @@ async function mobileStudyExam(data, config) {
   return { exam: { id: `exam_${Date.now()}`, title, topic, difficulty, timeLimit, questions: questions.slice(0, count) } };
 }
 
+function wrapCanvasText(context, text, maxWidth) {
+  const words = String(text || '').trim().split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+  words.forEach(word => {
+    const candidate = line ? `${line} ${word}` : word;
+    if (line && context.measureText(candidate).width > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else line = candidate;
+  });
+  if (line) lines.push(line);
+  return lines.slice(0, 4);
+}
+
+async function createLocalJarvisVideo(prompt, requestedDuration = 6) {
+  if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
+    throw new Error('Este dispositivo no permite crear vídeos localmente desde Jarvis.');
+  }
+  const duration = Math.min(8, Math.max(3, Number(requestedDuration) || 6));
+  const canvas = document.createElement('canvas');
+  canvas.width = 720;
+  canvas.height = 1280;
+  const context = canvas.getContext('2d');
+  const stream = canvas.captureStream(24);
+  const mimeType = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'].find(type => MediaRecorder.isTypeSupported(type));
+  const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+  const chunks = [];
+  const startedAt = performance.now();
+  context.font = '500 34px sans-serif';
+  const promptLines = wrapCanvasText(context, prompt, 590);
+  const draw = now => {
+    const elapsed = Math.min(duration * 1000, now - startedAt);
+    const progress = elapsed / (duration * 1000);
+    const time = elapsed / 1000;
+    const hue = 185 + Math.sin(time * 0.85) * 35;
+    const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gradient.addColorStop(0, '#050c15');
+    gradient.addColorStop(0.55, '#071622');
+    gradient.addColorStop(1, '#02070d');
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.strokeStyle = 'rgba(80, 207, 232, .12)';
+    context.lineWidth = 2;
+    for (let x = 0; x < canvas.width; x += 72) { context.beginPath(); context.moveTo(x, 0); context.lineTo(x, canvas.height); context.stroke(); }
+    for (let y = 0; y < canvas.height; y += 72) { context.beginPath(); context.moveTo(0, y); context.lineTo(canvas.width, y); context.stroke(); }
+    const cx = canvas.width / 2;
+    const cy = 470;
+    const pulse = 1 + Math.sin(time * 3.4) * 0.08;
+    const glow = context.createRadialGradient(cx, cy, 10, cx, cy, 220 * pulse);
+    glow.addColorStop(0, `hsla(${hue}, 100%, 82%, .95)`);
+    glow.addColorStop(.24, `hsla(${hue}, 95%, 56%, .55)`);
+    glow.addColorStop(1, `hsla(${hue}, 90%, 42%, 0)`);
+    context.fillStyle = glow;
+    context.beginPath();
+    context.arc(cx, cy, 220 * pulse, 0, Math.PI * 2);
+    context.fill();
+    for (let ring = 0; ring < 4; ring++) {
+      context.beginPath();
+      context.arc(cx, cy, (70 + ring * 30) * pulse, time * (.25 + ring * .06), time * (.25 + ring * .06) + Math.PI * 1.55);
+      context.strokeStyle = `hsla(${hue + ring * 16}, 95%, 68%, ${.8 - ring * .12})`;
+      context.lineWidth = 4 - ring * .5;
+      context.stroke();
+    }
+    const core = context.createRadialGradient(cx - 30, cy - 35, 4, cx, cy, 90);
+    core.addColorStop(0, '#e9ffff');
+    core.addColorStop(.25, '#7ae9ff');
+    core.addColorStop(1, '#162b99');
+    context.fillStyle = core;
+    context.beginPath();
+    context.arc(cx, cy, 80 * pulse, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = '#9df5ff';
+    context.font = '700 24px monospace';
+    context.textAlign = 'center';
+    context.fillText('JARVIS · GENERADOR LOCAL', cx, 730);
+    context.fillStyle = '#eaf8ff';
+    context.font = '500 34px sans-serif';
+    promptLines.forEach((line, index) => context.fillText(line, cx, 820 + index * 48));
+    context.fillStyle = 'rgba(157, 229, 247, .72)';
+    context.font = '22px monospace';
+    context.fillText(`${Math.round(progress * 100)}%  ·  SIN CUOTA  ·  ${duration}s`, cx, 1070);
+    if (progress < 1) requestAnimationFrame(draw);
+  };
+  return await new Promise((resolve, reject) => {
+    recorder.ondataavailable = event => { if (event.data?.size) chunks.push(event.data); };
+    recorder.onerror = () => reject(new Error('No se pudo crear el vídeo local.'));
+    recorder.onstop = () => {
+      stream.getTracks().forEach(track => track.stop());
+      if (!chunks.length) return reject(new Error('El vídeo local quedó vacío.'));
+      resolve(URL.createObjectURL(new Blob(chunks, { type: recorder.mimeType || 'video/webm' })));
+    };
+    recorder.start(250);
+    requestAnimationFrame(draw);
+    window.setTimeout(() => { if (recorder.state !== 'inactive') recorder.stop(); }, duration * 1000 + 180);
+  });
+}
+
 async function api(path, body) {
   if (!IS_ANDROID_APP) {
     const response = await fetch(path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : undefined);
@@ -504,10 +607,15 @@ async function api(path, body) {
   if (path === '/api/action') {
     const name = String(body?.name || '');
     const args = body?.arguments || {};
-    if (name === 'generate_image') {
+    if (name === 'generate_image' || name === 'generate_video') {
       const prompt = String(args.prompt || '').trim();
-      if (!prompt) throw new Error('Falta la descripción de la imagen.');
-      return { result: { url: `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${Math.min(1536, Math.max(256, Number(args.width) || 1024))}&height=${Math.min(1536, Math.max(256, Number(args.height) || 1024))}&nologo=true`, dispositivo: 'Android' } };
+      if (!prompt) throw new Error(`Falta la descripción de ${name === 'generate_image' ? 'la imagen' : 'el vídeo'}.`);
+      if (name === 'generate_image') {
+        const params = new URLSearchParams({ model: 'flux', width: String(Math.min(1536, Math.max(256, Number(args.width) || 1024))), height: String(Math.min(1536, Math.max(256, Number(args.height) || 1024))), nologo: 'true' });
+        return { result: { url: `${POLLINATIONS_IMAGE_ENDPOINT}${encodeURIComponent(prompt)}?${params}`, dispositivo: 'Android', generador: 'Pollinations · FLUX' } };
+      }
+      const url = await createLocalJarvisVideo(prompt, args.duration);
+      return { result: { url, dispositivo: 'Android', generador: 'Jarvis · vídeo local ilimitado' } };
     }
     if (!window.JarvisAndroid?.performAction) throw new Error('El puente de acciones de Android no está disponible. Reinstala Jarvis desde la APK más reciente.');
     const raw = window.JarvisAndroid.performAction(name, JSON.stringify(args));
@@ -857,7 +965,7 @@ async function handleTool(call) {
   if (['generate_image', 'generate_video', 'generate_3d'].includes(call.function.name) && result?.result?.url) {
     const media = result.result;
     const mediaUrl = String(media.url);
-    if (/^(?:https?:\/\/127\.0\.0\.1:3210\/media\/|https?:\/\/image\.pollinations\.ai\/)/.test(mediaUrl)) {
+    if (/^(?:blob:|https?:\/\/127\.0\.0\.1:3210\/media\/|https?:\/\/(?:image\.|gen\.)pollinations\.ai\/)/.test(mediaUrl)) {
       if (call.function.name === 'generate_image') {
         const image = document.createElement('img');
         image.alt = 'Imagen creada por Jarvis';
