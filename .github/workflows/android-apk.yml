@@ -36,7 +36,21 @@ jobs:
           gradle-version: '8.10.2'
 
       - name: Compilar APK firmado para distribución
-        run: gradle --no-daemon --stacktrace -p android assembleRelease
+        id: build_apk
+        shell: bash
+        run: |
+          set +e
+          gradle --no-daemon --stacktrace -p android assembleRelease 2>&1 | tee android-build.log
+          status=${PIPESTATUS[0]}
+          exit "$status"
+
+      - name: Guardar registro de compilación
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jarvis-Android-build-log
+          path: android-build.log
+          if-no-files-found: error
 
       - name: Guardar APK como artefacto
         uses: actions/upload-artifact@v4
@@ -48,8 +62,8 @@ jobs:
       - name: Publicar APK en GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.8.1
-          name: Jarvis Android v1.8.1
+          tag_name: v1.8.2
+          name: Jarvis Android v1.8.2
           body: |-
             Aplicación Android nativa de Jarvis.
 
