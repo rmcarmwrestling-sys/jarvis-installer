@@ -825,8 +825,9 @@ function readToolArguments(call) {
   return args;
 }
 
-function requestApproval(call, preparedArgs) {
+function requestApproval(call, preparedArgs, options = {}) {
   const args = preparedArgs === undefined ? readToolArguments(call) : preparedArgs;
+  const automatic = Boolean(options.autoApprove);
   const description = actionDescription(call.function.name, args);
   const card = document.createElement('div');
   card.className = 'action-card';
@@ -858,7 +859,14 @@ function requestApproval(call, preparedArgs) {
   footer.className = 'action-footer';
   const status = document.createElement('span');
   status.className = 'status';
-  status.textContent = 'Esperando tu autorización';
+  status.textContent = automatic ? 'Generando…' : 'Esperando tu autorización';
+  if (automatic) {
+    footer.append(status);
+    card.append(top, details, footer);
+    $('#pendingArea').append(card);
+    scrollToBottom();
+    return Promise.resolve({ approved: true, args, card, status, automatic: true });
+  }
   const deny = document.createElement('button');
   deny.className = 'deny-button';
   deny.type = 'button';
@@ -909,14 +917,15 @@ function rememberedApprovalNotice(call, args) {
 async function handleTool(call) {
   const args = readToolArguments(call);
   const isRememberedApp = call.function.name === 'open_app' && state.appOpeningAuthorized;
-  const approval = isRememberedApp ? rememberedApprovalNotice(call, args) : await requestApproval(call, args);
+  const automaticMedia = ['generate_image', 'generate_video'].includes(call.function.name);
+  const approval = isRememberedApp ? rememberedApprovalNotice(call, args) : await requestApproval(call, args, { autoApprove: automaticMedia });
   let result;
   if (!approval.approved) {
     result = { error: 'La persona rechazó esta acción. No se ejecutó.' };
   } else {
     try {
       result = await api('/api/action', { approved: true, name: call.function.name, arguments: approval.args });
-      approval.status.textContent = 'Acción completada';
+      approval.status.textContent = automaticMedia ? 'Generación completada' : 'Acción completada';
       approval.status.style.color = '#9bd6c0';
       if (call.function.name === 'open_app') {
         const permissionSaved = saveAppOpeningPermission();
