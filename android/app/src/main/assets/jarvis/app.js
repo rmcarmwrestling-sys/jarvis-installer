@@ -11,6 +11,7 @@ const ACCOUNT_CONVERSATIONS_PREFIX = 'jarvis.conversations.account.v1';
 const ACCOUNT_STUDY_PREFIX = 'jarvis.study.history.account.v1';
 const MOBILE_CONFIG_KEY = 'jarvis.android.config.v2';
 const OPENROUTER_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
+const LOCAL_MODEL_ID = 'qwen2.5-0.5b-instruct-q4_k_m';
 // The legacy image route remains publicly callable. The current unified
 // Pollinations API requires a provider key, so video is generated locally
 // below to keep Jarvis usable without another account or quota.
@@ -23,13 +24,59 @@ function readMobileConfig() {
   try {
     const stored = localStorage.getItem(MOBILE_CONFIG_KEY) || localStorage.getItem('jarvis.android.config.v1') || '{}';
     const value = JSON.parse(stored);
-    return { provider: 'openrouter', model: String(value.model || 'openrouter/free'), apiKey: String(value.apiKey || '') };
+    return { provider: ['openrouter', 'local'].includes(value.provider) ? value.provider : 'openrouter', model: String(value.model || (value.provider === 'local' ? LOCAL_MODEL_ID : 'openrouter/free')), apiKey: String(value.apiKey || '') };
   } catch { return { provider: 'openrouter', model: 'openrouter/free', apiKey: '' }; }
 }
 
 function writeMobileConfig(config) {
   try { localStorage.setItem(MOBILE_CONFIG_KEY, JSON.stringify(config)); }
   catch { throw new Error('Android no pudo guardar los ajustes en este dispositivo.'); }
+}
+
+const localLlmRequests = new Map();
+let localLlmRequestNumber = 0;
+
+window.onLocalLlmEvent = (requestId, rawPayload) => {
+  let payload;
+  try { payload = typeof rawPayload === 'string' ? JSON.parse(rawPayload) : rawPayload; }
+  catch { payload = { state: 'error', message: 'El modelo local devolvió una respuesta no válida.' }; }
+  if (payload?.state === 'downloading') {
+    const progress = Number(payload.progress);
+    const label = $('#connectionLabel');
+    if (label && progress >= 0) label.textContent = `DESCARGANDO ${progress}%`;
+    return;
+  }
+  const pending = localLlmRequests.get(String(requestId));
+  if (!pending) return;
+  localLlmRequests.delete(String(requestId));
+  if (payload?.state === 'error') pending.reject(new Error(payload.message || 'El modelo local no pudo responder.'));
+  else pending.resolve(payload);
+};
+
+function localModelStatus() {
+  if (!window.JarvisAndroid?.localModelStatus) return { available: false, model: LOCAL_MODEL_ID, bytes: 0, expectedBytes: 0 };
+  try { return JSON.parse(window.JarvisAndroid.localModelStatus() || '{}'); }
+  catch { return { available: false, model: LOCAL_MODEL_ID, bytes: 0, expectedBytes: 0 }; }
+}
+
+function requestLocalLlm(messages) {
+  if (!window.JarvisAndroid?.localChat) throw new Error('El motor local de Android no está instalado. Reinstala la APK de Jarvis.');
+  const requestId = `local-${Date.now()}-${++localLlmRequestNumber}`;
+  return new Promise((resolve, reject) => {
+    localLlmRequests.set(requestId, { resolve, reject });
+    try { window.JarvisAndroid.localChat(requestId, JSON.stringify(messages)); }
+    catch (error) { localLlmRequests.delete(requestId); reject(error); }
+  });
+}
+
+function downloadLocalModel() {
+  if (!window.JarvisAndroid?.downloadLocalModel) throw new Error('La descarga local solo está disponible en la APK de Android.');
+  const requestId = `model-${Date.now()}-${++localLlmRequestNumber}`;
+  return new Promise((resolve, reject) => {
+    localLlmRequests.set(requestId, { resolve, reject });
+    try { window.JarvisAndroid.downloadLocalModel(requestId); }
+    catch (error) { localLlmRequests.delete(requestId); reject(error); }
+  });
 }
 
 const mobileTools = [
@@ -145,13 +192,14 @@ function loadAppOpeningPermission() {
 }
 
 const initialAuthAccount = readInitialAuthAccount();
+const initialMobileConfig = readMobileConfig();
 
 const initialConversations = loadConversations(initialAuthAccount);
 const initialConversation = initialConversations[initialConversations.length - 1] || createConversation();
 
 const state = {
-  account: initialAuthAccount, authenticated: Boolean(initialAuthAccount), conversations: initialConversations, activeConversationId: initialConversation.id, messages: initialConversation.messages.map(message => ({ ...message })), provider: 'openrouter', model: 'openrouter/free', hasKey: false,
-  ollama: { available: false, models: [] }, appOpeningAuthorized: loadAppOpeningPermission(), busy: false, recognition: null, toastTimer: null,
+  account: initialAuthAccount, authenticated: Boolean(initialAuthAccount), conversations: initialConversations, activeConversationId: initialConversation.id, messages: initialConversation.messages.map(message => ({ ...message })), provider: initialMobileConfig.provider, model: initialMobileConfig.model, hasKey: Boolean(initialMobileConfig.apiKey),
+  ollama: { available: false, models: [] }, local: localModelStatus(), appOpeningAuthorized: loadAppOpeningPermission(), busy: false, recognition: null, toastTimer: null,
   studyImages: [], studyExam: null, studyAnswers: {}, studyTimer: null, studyTimerEnds: 0, studyHistory: loadStudyHistory(initialAuthAccount), studyPage: 'dashboard', activeView: 'chat', attachments: [],
 };
 
@@ -591,16 +639,35 @@ async function api(path, body) {
     return data;
   }
   const config = readMobileConfig();
-  if (path === '/api/status') return { provider: 'openrouter', model: config.model, keyConfigured: Boolean(config.apiKey), ollama: { available: false, models: [] } };
+  if (path === '/api/status') {
+    if (config.provider === 'local') return { provider: 'local', model: config.model || LOCAL_MODEL_ID, keyConfigured: false, local: localModelStatus(), ollama: { available: false, models: [] } };
+    return { provider: 'openrouter', model: config.model, keyConfigured: Boolean(config.apiKey), local: localModelStatus(), ollama: { available: false, models: [] } };
+  }
   if (path === '/api/config') {
+    const provider = String(body?.provider || 'openrouter');
     const model = String(body?.model || '').trim().slice(0, 120);
     const apiKey = String(body?.apiKey || '').trim() || config.apiKey;
+    if (provider === 'local') {
+      writeMobileConfig({ provider: 'local', model: LOCAL_MODEL_ID, apiKey: '' });
+      return { provider: 'local', model: LOCAL_MODEL_ID, keyConfigured: false, local: localModelStatus(), ollama: { available: false, models: [] } };
+    }
     if (!model) throw new Error('Indica el nombre del modelo.');
     if (!apiKey) throw new Error('Añade tu clave de OpenRouter.');
     writeMobileConfig({ provider: 'openrouter', model, apiKey });
     return { provider: 'openrouter', model, keyConfigured: true, ollama: { available: false, models: [] } };
   }
   if (path === '/api/study/generate') {
+    if (config.provider === 'local') {
+      const topic = String(body?.topic || '').trim().slice(0, 1500);
+      if (!topic) throw new Error('El modo local necesita un tema escrito para crear el examen.');
+      const count = Math.min(20, Math.max(1, Number.parseInt(body?.count, 10) || 10));
+      const instruction = `Devuelve SOLO JSON válido con este formato: {"questions":[{"type":"multiple_choice","question":"...","options":["...","...","...","..."],"answer":0,"explanation":"..."}]}. Crea exactamente ${count} preguntas breves sobre: ${topic}. Usa cuatro opciones y answer como índice 0-3.`;
+      const local = await requestLocalLlm([{ role: 'system', content: MOBILE_SYSTEM_PROMPT }, { role: 'user', content: instruction }]);
+      const parsed = mobileJsonContent(local.text || '');
+      const questions = (Array.isArray(parsed) ? parsed : parsed.questions || []).filter(item => item && item.question).slice(0, count).map((item, index) => ({ ...item, id: `q_${index + 1}` }));
+      if (!questions.length) throw new Error('El modelo local no devolvió preguntas válidas.');
+      return { exam: { id: `exam_${Date.now()}`, title: body?.title || `Examen de ${topic}`, topic, difficulty: body?.difficulty || 'medio', timeLimit: Number(body?.timeLimit || 0), questions } };
+    }
     if (!config.apiKey) throw new Error('Configura tu clave de OpenRouter antes de generar exámenes.');
     return mobileStudyExam(body, config);
   }
@@ -624,8 +691,13 @@ async function api(path, body) {
     return result.result === undefined ? { result } : result;
   }
   if (path === '/api/chat') {
-    if (!config.apiKey) throw new Error('Configura tu clave de OpenRouter en Ajustes antes de hablar con Jarvis.');
     const safeMessages = Array.isArray(body?.messages) ? body.messages.slice(-36) : [];
+    if (config.provider === 'local') {
+      const local = await requestLocalLlm([{ role: 'system', content: MOBILE_SYSTEM_PROMPT }, ...safeMessages]);
+      if (!local?.text) throw new Error('El modelo local devolvió una respuesta vacía.');
+      return { message: { role: 'assistant', content: local.text }, model: local.model || LOCAL_MODEL_ID };
+    }
+    if (!config.apiKey) throw new Error('Configura tu clave de OpenRouter en Ajustes antes de hablar con Jarvis.');
     const response = await fetch(OPENROUTER_ENDPOINT, { method: 'POST', headers: { Authorization: `Bearer ${config.apiKey}`, 'Content-Type': 'application/json', 'HTTP-Referer': location.href, 'X-Title': 'Jarvis Android' }, body: JSON.stringify({ model: config.model, messages: [{ role: 'system', content: MOBILE_SYSTEM_PROMPT }, ...safeMessages], tools: mobileTools, tool_choice: 'auto', temperature: 0.7, max_tokens: 4096 }) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data?.error?.message || `El proveedor respondió con el error ${response.status}.`);
@@ -1148,22 +1220,24 @@ function resizeInput() {
 
 function setConnection(status) {
   state.provider = status.provider || 'openrouter';
-  state.model = status.model || (state.provider === 'ollama' ? '' : 'openrouter/free');
+  state.model = status.model || (state.provider === 'local' ? LOCAL_MODEL_ID : (state.provider === 'ollama' ? '' : 'openrouter/free'));
   state.hasKey = Boolean(status.keyConfigured);
+  state.local = status.local || localModelStatus();
   state.ollama = status.ollama || { available: false, models: [] };
-  const ready = state.provider === 'ollama' ? state.ollama.available : state.hasKey;
-  const label = state.provider === 'ollama' ? 'IA LOCAL' : (ready ? 'ONLINE · GRATIS' : 'CONFIGURAR');
+  const ready = state.provider === 'local' ? Boolean(state.local.available) : (state.provider === 'ollama' ? state.ollama.available : state.hasKey);
+  const label = state.provider === 'local' ? (ready ? 'IA LOCAL' : 'DESCARGAR MODELO') : (state.provider === 'ollama' ? 'IA LOCAL' : (ready ? 'ONLINE · GRATIS' : 'CONFIGURAR'));
   $('#connectionLabel').textContent = label;
-  $('#localLabel').textContent = IS_ANDROID_APP ? 'APLICACIÓN ANDROID' : (state.provider === 'ollama' ? 'MODELO EN ESTE EQUIPO' : 'INTERFAZ EN ESTE EQUIPO');
+  $('#localLabel').textContent = state.provider === 'local' ? 'MODELO EN ESTE MÓVIL' : (IS_ANDROID_APP ? 'APLICACIÓN ANDROID' : (state.provider === 'ollama' ? 'MODELO EN ESTE EQUIPO' : 'INTERFAZ EN ESTE EQUIPO'));
   $('#providerLine').innerHTML = '';
   const text = document.createElement('span');
-  text.textContent = state.provider === 'ollama' ? (state.ollama.available ? `${state.ollama.models.length} modelo(s) disponible(s)` : 'Ollama no está conectado') : (state.hasKey ? 'Modelo gratuito conectado' : 'Conecta un modelo gratuito');
+  text.textContent = state.provider === 'local' ? (state.local.available ? 'Modelo local listo' : 'Descarga el modelo para empezar') : (state.provider === 'ollama' ? (state.ollama.available ? `${state.ollama.models.length} modelo(s) disponible(s)` : 'Ollama no está conectado') : (state.hasKey ? 'Modelo gratuito conectado' : 'Conecta un modelo gratuito'));
   const arrow = document.createElement('span');
   arrow.textContent = '›';
   $('#providerLine').append(text, arrow);
   $('#providerSelect').value = state.provider;
   $('#remoteModel').value = state.provider === 'openrouter' ? state.model : 'openrouter/free';
   if (state.provider === 'ollama') $('#localModel').value = state.model;
+  if (state.provider === 'local') $('#localModel').value = LOCAL_MODEL_ID;
   const list = $('#ollamaModels');
   list.replaceChildren();
   state.ollama.models.forEach(model => { const option = document.createElement('option'); option.value = model; list.append(option); });
@@ -1176,17 +1250,27 @@ async function refreshStatus() {
 }
 
 function updateSettingsDetails() {
-  if (IS_ANDROID_APP) $('#providerSelect').value = 'openrouter';
-  const local = !IS_ANDROID_APP && $('#providerSelect').value === 'ollama';
+  const ollamaOption = $('#providerSelect option[value="ollama"]');
+  if (ollamaOption) ollamaOption.hidden = IS_ANDROID_APP;
+  if (IS_ANDROID_APP && $('#providerSelect').value === 'ollama') $('#providerSelect').value = 'local';
+  const provider = $('#providerSelect').value;
+  const local = provider === 'ollama' || provider === 'local';
   $('#localDetails').hidden = !local;
   $('#remoteDetails').hidden = local;
   const status = $('#ollamaStatus');
-  status.classList.toggle('offline', !state.ollama.available);
+  const localReady = provider === 'local' ? Boolean(state.local?.available) : Boolean(state.ollama.available);
+  status.classList.toggle('offline', !localReady);
   status.replaceChildren();
   const dot = document.createElement('i');
   const text = document.createElement('span');
-  text.textContent = IS_ANDROID_APP ? 'Las acciones se ejecutan en este dispositivo Android' : (state.ollama.available ? `Ollama está activo · ${state.ollama.models.length} modelo(s)` : 'Ollama no está activo en este ordenador');
+  text.textContent = provider === 'local' ? (localReady ? 'Modelo local listo en este Android' : 'Descarga el modelo local de 0,5B para empezar') : (IS_ANDROID_APP ? 'Las acciones se ejecutan en este dispositivo Android' : (state.ollama.available ? `Ollama está activo · ${state.ollama.models.length} modelo(s)` : 'Ollama no está activo en este ordenador'));
   status.append(dot, text);
+  const download = $('#downloadLocalModel');
+  if (download) download.hidden = provider !== 'local' || localReady;
+  const ollamaLink = $('#ollamaDownloadLink');
+  if (ollamaLink) ollamaLink.hidden = provider !== 'ollama';
+  const note = $('#localModelNote');
+  if (note) note.textContent = provider === 'local' ? 'Descarga una vez un modelo de unos 470 MB. Después Jarvis responderá sin API y sin conexión.' : 'Instala Ollama y descarga un modelo compatible con uso de herramientas. En este equipo conviene empezar por uno pequeño.';
 }
 
 function openSettings() {
@@ -1194,6 +1278,7 @@ function openSettings() {
   $('#apiKeyInput').value = '';
   if (state.provider === 'openrouter') $('#remoteModel').value = state.model || 'openrouter/free';
   if (state.provider === 'ollama') $('#localModel').value = state.model || '';
+  if (state.provider === 'local') $('#localModel').value = LOCAL_MODEL_ID;
   updateSettingsDetails();
   renderAppOpeningPermission();
   $('#settingsDialog').showModal();
@@ -1203,7 +1288,7 @@ function openSettings() {
 async function saveSettings() {
   const button = $('#saveSettings');
   const provider = $('#providerSelect').value;
-  const model = provider === 'ollama' ? $('#localModel').value.trim() : $('#remoteModel').value.trim();
+  const model = provider === 'local' ? LOCAL_MODEL_ID : (provider === 'ollama' ? $('#localModel').value.trim() : $('#remoteModel').value.trim());
   const key = $('#apiKeyInput').value.trim();
   const error = $('#settingsError');
   error.hidden = true;
@@ -1213,13 +1298,33 @@ async function saveSettings() {
     const result = await api('/api/config', { provider, model, apiKey: key });
     $('#settingsDialog').close();
     await refreshStatus();
-    toast(provider === 'ollama' ? 'Jarvis utilizará el modelo local.' : 'Jarvis ya puede usar los modelos gratuitos.');
+    toast(provider === 'local' ? 'Jarvis utilizará el modelo local del móvil.' : (provider === 'ollama' ? 'Jarvis utilizará el modelo local.' : 'Jarvis ya puede usar los modelos gratuitos.'));
   } catch (problem) {
     error.textContent = problem.message;
     error.hidden = false;
   } finally {
     button.disabled = false;
     button.innerHTML = 'Guardar ajustes <span>→</span>';
+  }
+}
+
+async function downloadLocalModelFromSettings() {
+  const button = $('#downloadLocalModel');
+  if (!button) return;
+  button.disabled = true;
+  button.textContent = 'Descargando modelo…';
+  try {
+    await downloadLocalModel();
+    state.local = localModelStatus();
+    updateSettingsDetails();
+    await refreshStatus();
+    toast('Modelo local listo. Jarvis ya puede responder sin API.');
+  } catch (problem) {
+    $('#settingsError').textContent = problem.message;
+    $('#settingsError').hidden = false;
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Descargar modelo local';
   }
 }
 
@@ -1771,6 +1876,7 @@ $('#mobileDrawerSettings')?.addEventListener('click', () => { closeMobileDrawer(
 $('#mobileDrawerAccount')?.addEventListener('click', () => toast('La cuenta de Jarvis se guarda localmente en este dispositivo.'));
 $('#providerLine').addEventListener('click', openSettings);
 $('#providerSelect').addEventListener('change', updateSettingsDetails);
+$('#downloadLocalModel')?.addEventListener('click', downloadLocalModelFromSettings);
 $('#saveSettings').addEventListener('click', saveSettings);
 $('#cancelSettings').addEventListener('click', () => $('#settingsDialog').close());
 $('#revokeAppOpeningPermission').addEventListener('click', revokeAppOpeningPermission);

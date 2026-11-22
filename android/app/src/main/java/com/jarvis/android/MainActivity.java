@@ -43,6 +43,7 @@ public class MainActivity extends Activity {
     private int currentBottomInset;
     private int currentImeInset;
     private volatile boolean photoPickerRequested;
+    private LocalLlmBridge localLlm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,6 +106,14 @@ public class MainActivity extends Activity {
         webView.getSettings().setAllowFileAccess(false);
         webView.getSettings().setAllowContentAccess(false);
         webView.getSettings().setSupportMultipleWindows(false);
+        localLlm = new LocalLlmBridge(this, (requestId, payload) -> {
+            if (webView == null) return;
+            runOnUiThread(() -> {
+                if (webView == null) return;
+                String script = "window.onLocalLlmEvent && window.onLocalLlmEvent(" + JSONObject.quote(requestId) + "," + payload + ");";
+                webView.evaluateJavascript(script, null);
+            });
+        });
         webView.addJavascriptInterface(new JarvisBridge(), "JarvisAndroid");
 
         WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
@@ -285,6 +294,7 @@ public class MainActivity extends Activity {
         if (webView != null) {
             webView.destroy();
         }
+        if (localLlm != null) localLlm.close();
         super.onDestroy();
     }
 
@@ -294,6 +304,21 @@ public class MainActivity extends Activity {
      * the Android device that currently runs the app; it never controls Windows.
      */
     private final class JarvisBridge {
+        @JavascriptInterface
+        public String localModelStatus() {
+            return localLlm == null ? "{\"available\":false,\"model\":\"\"}" : localLlm.status();
+        }
+
+        @JavascriptInterface
+        public void downloadLocalModel(String requestId) {
+            if (localLlm != null) localLlm.download(requestId == null ? "model" : requestId);
+        }
+
+        @JavascriptInterface
+        public void localChat(String requestId, String messagesJson) {
+            if (localLlm != null) localLlm.chat(requestId == null ? "chat" : requestId, messagesJson == null ? "[]" : messagesJson);
+        }
+
         @JavascriptInterface
         public void chooseGoogleAccount() {
             runOnUiThread(() -> {
