@@ -1548,7 +1548,7 @@ $('#mobileMenuButton')?.addEventListener('click', () => {
 });
 $('#mobileDrawerClose')?.addEventListener('click', closeMobileDrawer);
 $('#mobileDrawerBackdrop')?.addEventListener('click', closeMobileDrawer);
-$('#mobileDrawerNewChat')?.addEventListener('click', () => { closeMobileDrawer(); $('#newChat').click(); });
+$('#mobileDrawerChatAction')?.addEventListener('click', () => { closeMobileDrawer(); $('#newChat').click(); });
 $('#mobileDrawerChat')?.addEventListener('click', () => { closeMobileDrawer(); showChatView(); $('#messageInput').focus(); });
 $('#mobileDrawerStudy')?.addEventListener('click', () => { closeMobileDrawer(); openStudyWorkspace(); });
 $('#mobileDrawerProjects')?.addEventListener('click', () => { closeMobileDrawer(); $('#projectsLink').click(); });

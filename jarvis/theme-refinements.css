@@ -300,6 +300,35 @@ body.auth-required{overflow:hidden}
 .auth-account-empty{padding:16px 9px;color:#7e9ca8;font-size:11px;line-height:1.5;text-align:center;border:1px dashed rgba(88,175,200,.28);border-radius:12px}
 .auth-add-account{width:100%;height:43px;margin-top:8px;border:1px solid rgba(95,207,228,.35);border-radius:13px;background:rgba(14,42,56,.68);color:#b8f4fa;font-size:12px;font-weight:650;cursor:pointer}.auth-add-account:hover{background:rgba(30,83,101,.72);border-color:#70deed}.auth-add-account span{margin-right:7px;color:#8be8f3;font-size:17px;vertical-align:-1px}
 
+/* Acceso rápido a Chat en la esquina inferior izquierda del menú móvil. */
+.mobile-drawer-chat-action{display:none}
+@media(max-width:760px){
+  body:not(.study-active) .mobile-drawer-chat-action{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:10px;
+    width:max-content;
+    align-self:flex-start;
+    min-width:112px;
+    height:46px;
+    margin:12px 0 0;
+    padding:0 17px;
+    border:1px solid rgba(91,211,238,.48);
+    border-radius:24px;
+    background:linear-gradient(110deg,rgba(20,72,91,.96),rgba(25,44,69,.96));
+    color:#d8faff;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 10px 25px rgba(0,0,0,.28),0 0 18px rgba(58,196,226,.14),inset 0 1px rgba(185,246,255,.12);
+  }
+  body:not(.study-active) .mobile-drawer-chat-action:hover,
+  body:not(.study-active) .mobile-drawer-chat-action:focus-visible{border-color:#7de8f7;background:linear-gradient(110deg,rgba(28,104,127,.98),rgba(30,56,87,.98));outline:none;transform:translateY(-1px)}
+  body:not(.study-active) .mobile-drawer-chat-icon{width:27px;height:27px;display:grid;place-items:center;border:1px solid rgba(131,237,250,.55);border-radius:9px;background:rgba(62,185,211,.15);color:#9bf2fb;box-shadow:0 0 12px rgba(71,215,238,.22)}
+  body:not(.study-active) .mobile-drawer-chat-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+}
+
 /* Menú de fuentes de adjuntos que aparece al pulsar «+». */
 .composer{position:relative}
 .attachment-menu{position:absolute;left:12px;bottom:56px;z-index:30;display:flex;flex-direction:column;gap:4px;min-width:174px;padding:8px;border:1px solid rgba(104,208,232,.36);border-radius:16px;background:rgba(10,22,34,.98);box-shadow:0 18px 42px rgba(0,0,0,.45),0 0 24px rgba(47,180,218,.12);backdrop-filter:blur(16px)}
